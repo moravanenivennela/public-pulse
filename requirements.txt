@@ -3,3 +3,6 @@ google-generativeai
 pandas
 plotly
 pillow
+folium
+streamlit-folium
+deep-translator

@@ -340,21 +340,21 @@ section[data-testid="stFileUploaderDropzone"] p,
         color: #ffffff !important;
     }
 [data-testid="stPasswordInput"] button {
-        color: #000000 !important;
-        background-color: #ffffff !important;
+        color: #ffffff !important;
+        background-color: #1e293b !important;
         border: none !important;
         border-radius: 5px !important;
     }
     
     [data-testid="stPasswordInput"] button svg {
-        fill: #000000 !important;
-        stroke: #000000 !important;
+        fill: #ffffff !important;
+        stroke: #ffffff !important;
     }
     
     [data-testid="stPasswordInput"] svg {
-        fill: #000000 !important;
-        stroke: #000000 !important;
-        color: #000000 !important;
+        fill: #ffffff !important;
+        stroke: #ffffff !important;
+        color: #ffffff !important;
     }
 
 """, unsafe_allow_html=True)
@@ -586,6 +586,9 @@ if page == "🏠 Submit Complaint":
                     image_data = None
                     if uploaded_image:
                         import base64
+                        import folium
+                        from streamlit_folium import st_folium
+                        import time
                         image_data = base64.b64encode(uploaded_image.read()).decode()
 
                     complaint = {

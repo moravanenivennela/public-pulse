@@ -11,11 +11,11 @@ from folium.plugins import HeatMap
 from streamlit_folium import st_folium
 import time
 
-GEMINI_API_KEY = "AIzaSyCx2Z22juGpoorHjA3QKop8aA2m0aM2x-o"
+GEMINI_API_KEY = "AIzaSyBoE86E-3zhGrYXd-s6RKCkJSYuK_-74sE"
+ADMIN_PASSWORD = "admin123"
 
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
-
+model = genai.GenerativeModel('gemini-pro')
 
 st.set_page_config(
     page_title="Public Pulse | Smart Citizen Services",
@@ -132,12 +132,6 @@ if 'complaint_counter' not in st.session_state:
 if 'admin_logged_in' not in st.session_state:
     st.session_state.admin_logged_in = False
 
-if 'copilot_open' not in st.session_state:
-    st.session_state.copilot_open = False
-
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = []
-
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = [
         {"role": "assistant", "content": "👋 Hello! I am the Public Pulse AI Assistant. I can help you submit complaints, track status, and answer civic questions. How can I help you today?"}
@@ -230,52 +224,7 @@ def generate_prediction(complaints):
         ]
 
 # ============================================
-# ============================================
-# COPILOT FUNCTION
-# ============================================
-def ask_copilot(question):
-    try:
-        complaints = st.session_state.complaints
-        total = len(complaints)
-        high = len([c for c in complaints if c['priority'] == 'High'])
-        medium = len([c for c in complaints if c['priority'] == 'Medium'])
-        low = len([c for c in complaints if c['priority'] == 'Low'])
-        resolved = len([c for c in complaints if c['status'] == 'Resolved'])
-        pending = len([c for c in complaints if c['status'] == 'Pending'])
-
-        complaint_details = ""
-        for c in complaints:
-            complaint_details += f"ID:{c['id']} Category:{c['category']} Location:{c['location']} Priority:{c['priority']} Status:{c['status']}\n"
-
-        prompt = f"""
-        You are Public Pulse AI Copilot, a smart helpful assistant for a citizen complaint management system.
-        
-        Current system data:
-        - Total Complaints: {total}
-        - High Priority: {high}
-        - Medium Priority: {medium}
-        - Low Priority: {low}
-        - Resolved: {resolved}
-        - Pending: {pending}
-        
-        All Complaints:
-        {complaint_details}
-        
-        Instructions:
-        - Answer ANY question the user asks
-        - If question is about complaints, use the data above
-        - If question is general knowledge, answer from your knowledge
-        - If question is about how to use this app, explain clearly
-        - Always be friendly, helpful and concise
-        - Never say you cannot answer
-        
-        User Question: {question}
-        """
-        response = model.generate_content(prompt)
-        return response.text.strip()
-    except Exception as e:
-        return f"Error: {str(e)} — Please check your Gemini API key!"
-
+# HERO HEADER
 # ============================================
 st.markdown("""
 <div class="hero-header">
@@ -284,46 +233,7 @@ st.markdown("""
     <p style="font-size:0.85rem;opacity:0.8;">🌐 Multilingual | 🔍 Fake Detector | 🗺️ Satellite Map | 🤖 Predictive AI | ⏱️ Live Timers</p>
 </div>
 """, unsafe_allow_html=True)
-# ============================================
-# COPILOT BUTTON
-# ============================================
-col_space, col_btn = st.columns([6,1])
-with col_btn:
-    if st.button("🤖", help="Ask AI Copilot"):
-        st.session_state.copilot_open = not st.session_state.copilot_open
 
-if st.session_state.copilot_open:
-    st.markdown("""
-    <div style="background:white; border-radius:20px; 
-                box-shadow:0 10px 40px rgba(0,0,0,0.2); 
-                margin-bottom:20px; overflow:hidden;">
-        <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb); 
-                    padding:15px 20px;">
-            <span style="color:white; font-weight:700; font-size:1rem;">🤖 Public Pulse Copilot</span><br>
-            <span style="color:rgba(255,255,255,0.8); font-size:0.8rem;">Ask me anything about complaints!</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if st.session_state.chat_history:
-        for chat in st.session_state.chat_history[-4:]:
-            st.markdown(f"**🧑 You:** {chat['user']}")
-            st.markdown(f"**🤖 Copilot:** {chat['bot']}")
-            st.markdown("---")
-
-    user_question = st.text_input("💬 Ask Copilot...", placeholder="How many complaints are pending?", key="copilot_input")
-
-    col1, col2 = st.columns([3,1])
-    with col2:
-        if st.button("Send ➤", key="copilot_send"):
-            if user_question:
-                with st.spinner("🤖 Thinking..."):
-                    answer = ask_copilot(user_question)
-                st.session_state.chat_history.append({
-                    "user": user_question,
-                    "bot": answer
-                })
-                st.rerun()
 # ============================================
 # SIDEBAR
 # ============================================

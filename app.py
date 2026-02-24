@@ -437,11 +437,12 @@ def get_lang():
     return TRANSLATIONS[st.session_state.citizen_lang]
 
 # ============================================
-# HEADER
+# HEADER — rendered only once using placeholder
 # ============================================
+header_placeholder = st.empty()
 SL = get_lang()
 tags_html = "".join([f'<span style="background:rgba(255,255,255,0.15);color:white;padding:4px 10px;border-radius:20px;font-size:0.7rem;font-weight:600;">{t}</span>' for t in SL["header_tags"]])
-st.markdown(f"""
+header_placeholder.markdown(f"""
 <div class="app-header">
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;">
         <div style="background:rgba(255,255,255,0.2);width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">🏛️</div>

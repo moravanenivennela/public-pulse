@@ -443,26 +443,6 @@ SL = get_lang()
 tags_html = "".join([f'<span style="background:rgba(255,255,255,0.15);color:white;padding:4px 10px;border-radius:20px;font-size:0.7rem;font-weight:600;">{t}</span>' for t in SL["header_tags"]])
 st.markdown(f"""
 <div class="app-header">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <div style="background:rgba(255,255,255,0.2);padding:6px 12px;border-radius:10px;
-                    cursor:pointer;font-size:1.2rem;display:none;" 
-             class="mobile-menu-hint" onclick="document.querySelector('[data-testid=collapsedControl]').click()">
-            ☰
-        </div>
-        <div style="flex:1;text-align:center;">
-            <h1 style="color:white;margin:0;font-size:1.5rem;font-weight:800;">Public Pulse</h1>
-            <p style="color:rgba(255,255,255,0.8);margin:0;font-size:0.72rem;">{SL["header_sub"]}</p>
-        </div>
-    </div>
-    <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
-        {tags_html}
-    </div>
-    <style>
-    @media (max-width: 768px) {{
-        .mobile-menu-hint {{ display: block !important; }}
-    }}
-    </style>
-</div>
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;">
         <div style="background:rgba(255,255,255,0.2);width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">🏛️</div>
         <div style="text-align:left;">
@@ -477,109 +457,8 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ============================================
-# MOBILE NAVIGATION BAR
+# COPILOT BUTTON
 # ============================================
-st.markdown("""
-<style>
-@media (max-width: 768px) {
-    .mobile-nav {
-        display: flex !important;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: #ffffff;
-        border-top: 2px solid #e5e7eb;
-        z-index: 99999;
-        padding: 8px 4px;
-        box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-        justify-content: space-around;
-        align-items: center;
-    }
-    .mobile-nav-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 6px 8px;
-        border-radius: 12px;
-        cursor: pointer;
-        text-decoration: none;
-        min-width: 50px;
-        transition: all 0.2s;
-    }
-    .mobile-nav-btn:active {
-        background: #eff6ff;
-        transform: scale(0.95);
-    }
-    .mobile-nav-icon { font-size: 1.4rem; line-height: 1; }
-    .mobile-nav-label { font-size: 0.55rem; color: #64748b; font-weight: 600; margin-top: 3px; text-align: center; }
-    
-    /* Push content up so bottom nav doesn't cover it */
-    .main .block-container { padding-bottom: 80px !important; }
-    
-    /* Hide desktop sidebar toggle on mobile */
-    [data-testid="collapsedControl"] { display: none !important; }
-}
-
-@media (min-width: 769px) {
-    .mobile-nav { display: none !important; }
-}
-</style>
-""", unsafe_allow_html=True)
-
-# Mobile bottom navigation
-if not st.session_state.admin_logged_in:
-    st.markdown("""
-    <div class="mobile-nav">
-        <a class="mobile-nav-btn" onclick="window.location.reload()" 
-           href="?page=submit" target="_self">
-            <div class="mobile-nav-icon">🏠</div>
-            <div class="mobile-nav-label">Submit</div>
-        </a>
-        <a class="mobile-nav-btn" href="?page=track" target="_self">
-            <div class="mobile-nav-icon">🔍</div>
-            <div class="mobile-nav-label">Track</div>
-        </a>
-        <a class="mobile-nav-btn" href="?page=ai" target="_self">
-            <div class="mobile-nav-icon">🤖</div>
-            <div class="mobile-nav-label">AI Help</div>
-        </a>
-        <a class="mobile-nav-btn" href="?page=feedback" target="_self">
-            <div class="mobile-nav-icon">💬</div>
-            <div class="mobile-nav-label">Feedback</div>
-        </a>
-        <a class="mobile-nav-btn" href="?page=admin" target="_self">
-            <div class="mobile-nav-icon">🔐</div>
-            <div class="mobile-nav-label">Admin</div>
-        </a>
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-    <div class="mobile-nav">
-        <a class="mobile-nav-btn" href="?page=track" target="_self">
-            <div class="mobile-nav-icon">🔍</div>
-            <div class="mobile-nav-label">Track</div>
-        </a>
-        <a class="mobile-nav-btn" href="?page=satellite" target="_self">
-            <div class="mobile-nav-icon">🗺️</div>
-            <div class="mobile-nav-label">Map</div>
-        </a>
-        <a class="mobile-nav-btn" href="?page=dashboard" target="_self">
-            <div class="mobile-nav-icon">📊</div>
-            <div class="mobile-nav-label">Dashboard</div>
-        </a>
-        <a class="mobile-nav-btn" href="?page=predict" target="_self">
-            <div class="mobile-nav-icon">🔮</div>
-            <div class="mobile-nav-label">Predict</div>
-        </a>
-        <a class="mobile-nav-btn" href="?page=leaderboard" target="_self">
-            <div class="mobile-nav-icon">🏅</div>
-            <div class="mobile-nav-label">Ranks</div>
-        </a>
-    </div>
-    """, unsafe_allow_html=True)
 col_space, col_btn = st.columns([6,1])
 with col_btn:
     if st.button("🤖", help="Ask AI Copilot"):

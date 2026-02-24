@@ -11,7 +11,7 @@ from folium.plugins import HeatMap
 from streamlit_folium import st_folium
 import time
 
-GROQ_API_KEY = "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"
+GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "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")
 ADMIN_PASSWORD = "admin123"
 
 st.set_page_config(
@@ -715,7 +715,7 @@ st.markdown("""
         <div style="background:rgba(255,255,255,0.2);width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">🏛️</div>
         <div style="text-align:left;">
             <h1 style="color:white;margin:0;font-size:1.5rem;font-weight:800;">Public Pulse</h1>
-            <p style="color:rgba(255,255,255,0.8);margin:0;font-size:0.72rem;">AI Citizen Services • Ratan Tata Innovation Hub</p>
+            <p style="color:rgba(255,255,255,0.8);margin:0;font-size:0.72rem;">AI-Powered Smart Citizen Services</p>
         </div>
     </div>
     <div style="display:flex;justify-content:center;gap:12px;margin-top:12px;flex-wrap:wrap;">
@@ -776,38 +776,66 @@ with st.sidebar:
     resolved = len([c for c in complaints if c['status'] == 'Resolved'])
     fake_count = len([c for c in complaints if c.get('is_fake', False)])
 
-    st.markdown(f"""
-    <div class="sidebar-stats">
-        <h3 style="margin:0;color:white;">📊 Live Stats</h3>
-        <hr style="border-color:rgba(255,255,255,0.3);">
-        <p style="margin:5px 0;">📋 Total: <strong>{total}</strong></p>
-        <p style="margin:5px 0;">🔴 High Priority: <strong>{high}</strong></p>
-        <p style="margin:5px 0;">✅ Resolved: <strong>{resolved}</strong></p>
-        <p style="margin:5px 0;">🚫 Fake Detected: <strong>{fake_count}</strong></p>
-    </div>
-    """, unsafe_allow_html=True)
+    if st.session_state.admin_logged_in:
+        st.markdown(f"""
+        <div class="sidebar-stats">
+            <h3 style="margin:0;color:white;">📊 Live Stats</h3>
+            <hr style="border-color:rgba(255,255,255,0.3);">
+            <p style="margin:5px 0;">📋 Total: <strong>{total}</strong></p>
+            <p style="margin:5px 0;">🔴 High Priority: <strong>{high}</strong></p>
+            <p style="margin:5px 0;">✅ Resolved: <strong>{resolved}</strong></p>
+            <p style="margin:5px 0;">🚫 Fake Detected: <strong>{fake_count}</strong></p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div class="sidebar-stats">
+            <h3 style="margin:0;color:white;">🏛️ Public Pulse</h3>
+            <hr style="border-color:rgba(255,255,255,0.3);">
+            <p style="margin:5px 0;opacity:0.9;">AI-Powered Citizen Services</p>
+            <p style="margin:5px 0;opacity:0.9;">Available 24/7 for you!</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-    page = st.radio("Navigation", [
-        "🏠 Submit Complaint",
-        "🔍 Track Complaint",
-        "🗺️ Satellite Map",
-        "🌡️ Heatmap",
-        "🤖 AI Assistant",
-        "🔮 Predictive Alerts",
-        "📊 Admin Dashboard",
-        "🏅 Leaderboard",
-        "🔐 Admin Login"
-    ])
+    if st.session_state.admin_logged_in:
+        page = st.radio("Navigation", [
+            "🔍 Track Complaint",
+            "🤖 AI Assistant",
+            "📱 QR Code",
+            "🗺️ Satellite Map",
+            "🌡️ Heatmap",
+            "🔮 Predictive Alerts",
+            "📊 Admin Dashboard",
+            "🏅 Leaderboard",
+            "🔐 Admin Login"
+        ])
+    else:
+        page = st.radio("Navigation", [
+            "🏠 Submit Complaint",
+            "🔍 Track Complaint",
+            "🤖 AI Assistant",
+            "💬 Feedback",
+            "📱 QR Code",
+            "🔐 Admin Login"
+        ])
     st.markdown("---")
     st.markdown("**About Public Pulse**")
     st.markdown("Next-gen AI civic tech platform with satellite maps, fake detection & predictive intelligence.")
-    st.markdown("Built for **Ratan Tata Innovation Hub**")
+    st.markdown("Built for **Smart City Initiative**")
+    st.markdown("---")
+    st.markdown("**📱 Scan to Open App**")
+    try:
+        st.image("public_pulse_qr.png", width=200)
+    except:
+        st.markdown("QR Code loading...")
 
 # ============================================
 # PAGE 1 - SUBMIT COMPLAINT
 # ============================================
 if page == "🏠 Submit Complaint":
-    col1, col2 = st.columns([2, 1])
+    col1 = st.columns([1])[0]
+    if True:
+        col1 = st.container()
     with col1:
         st.markdown('<p class="section-header">📝 Submit a New Complaint</p>', unsafe_allow_html=True)
 
@@ -931,42 +959,8 @@ if page == "🏠 Submit Complaint":
                         </div>
                         """, unsafe_allow_html=True)
 
-    with col2:
-        st.markdown('<p class="section-header">📈 Quick Stats</p>', unsafe_allow_html=True)
-        complaints_data = st.session_state.complaints
-        total = len(complaints_data)
-        high = len([c for c in complaints_data if c['priority']=='High'])
-        resolved = len([c for c in complaints_data if c['status']=='Resolved'])
-        fake = len([c for c in complaints_data if c.get('is_fake', False)])
-
-        st.markdown(f"""
-        <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:25px;border-radius:15px;text-align:center;margin-bottom:15px;box-shadow:0 4px 15px rgba(37,99,235,0.4);">
-            <div style="font-size:2.5rem;font-weight:700;color:#ffffff;">{total}</div>
-            <div style="font-size:0.9rem;color:#ffffff;margin-top:5px;">📋 Total Complaints</div>
-        </div>
-        <div style="background:linear-gradient(135deg,#dc2626,#ef4444);padding:25px;border-radius:15px;text-align:center;margin-bottom:15px;box-shadow:0 4px 15px rgba(220,38,38,0.4);">
-            <div style="font-size:2.5rem;font-weight:700;color:#ffffff;">{high}</div>
-            <div style="font-size:0.9rem;color:#ffffff;margin-top:5px;">🔴 High Priority</div>
-        </div>
-        <div style="background:linear-gradient(135deg,#059669,#10b981);padding:25px;border-radius:15px;text-align:center;margin-bottom:15px;box-shadow:0 4px 15px rgba(5,150,105,0.4);">
-            <div style="font-size:2.5rem;font-weight:700;color:#ffffff;">{resolved}</div>
-            <div style="font-size:0.9rem;color:#ffffff;margin-top:5px;">✅ Resolved</div>
-        </div>
-        <div style="background:linear-gradient(135deg,#be185d,#ec4899);padding:25px;border-radius:15px;text-align:center;margin-bottom:15px;box-shadow:0 4px 15px rgba(190,24,93,0.4);">
-            <div style="font-size:2.5rem;font-weight:700;color:#ffffff;">{fake}</div>
-            <div style="font-size:0.9rem;color:#ffffff;margin-top:5px;">🚫 Fake Detected</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        if complaints_data:
-            df = pd.DataFrame(complaints_data)
-            cat_counts = df['category'].value_counts().reset_index()
-            cat_counts.columns = ['Category','Count']
-            fig = px.pie(cat_counts, values='Count', names='Category',
-                        color_discrete_sequence=['#ef4444','#f97316','#22c55e','#3b82f6','#a855f7'],
-                        hole=0.4)
-            fig.update_layout(margin=dict(t=0,b=0,l=0,r=0), height=250, showlegend=False)
-            st.plotly_chart(fig, use_container_width=True)
+    with st.container():
+        pass
 
 # ============================================
 # PAGE 2 - TRACK COMPLAINT
@@ -979,39 +973,122 @@ elif page == "🔍 Track Complaint":
         st.markdown("###")
         track_id = st.text_input("🔍 Complaint ID", placeholder="PP-2024-001")
         if st.button("Track Complaint", use_container_width=True):
-            found = next((c for c in st.session_state.complaints if c['id'].upper()==track_id.upper()), None)
+            found = next((c for c in st.session_state.complaints if c['id'].upper()==track_id.upper().strip()), None)
             if found:
                 priority = found['priority']
                 status = found['status']
                 p_icon = "🔴" if priority=="High" else "🟡" if priority=="Medium" else "🟢"
                 progress = 10 if status=="Pending" else 60 if status=="In Progress" else 100
+                progress_msg = "⏳ Waiting for action" if status=="Pending" else "🔄 Being actively handled by department" if status=="In Progress" else "🎉 Issue has been resolved!"
+                status_color = "#7c3aed" if status=="Pending" else "#d97706" if status=="In Progress" else "#059669"
                 time_remaining, is_overdue = get_time_remaining(found['date'], priority)
                 timer_color = "#dc2626" if is_overdue else "#059669"
 
                 st.markdown(f"""
-                <div class="track-card" style="margin-top:20px;">
-                    <h2 style="text-align:center;color:#1e3a8a;">✅ Complaint Found!</h2><hr>
-                    <table style="width:100%;">
-                        <tr><td style="padding:8px;color:#64748b;">🆔 ID</td><td><strong>{found['id']}</strong></td></tr>
-                        <tr><td style="padding:8px;color:#64748b;">👤 Name</td><td><strong>{found['name']}</strong></td></tr>
-                        <tr><td style="padding:8px;color:#64748b;">📍 Location</td><td><strong>{found['location']}</strong></td></tr>
-                        <tr><td style="padding:8px;color:#64748b;">📂 Category</td><td><strong>{found['category']}</strong></td></tr>
-                        <tr><td style="padding:8px;color:#64748b;">🌐 Language</td><td><strong>{found.get('language','English')}</strong></td></tr>
-                        <tr><td style="padding:8px;color:#64748b;">🤖 Priority</td><td><strong>{p_icon} {found['priority']}</strong></td></tr>
-                        <tr><td style="padding:8px;color:#64748b;">🏢 Department</td><td><strong>{found['department']}</strong></td></tr>
-                        <tr><td style="padding:8px;color:#64748b;">📋 Summary</td><td><strong>{found['summary']}</strong></td></tr>
-                        <tr><td style="padding:8px;color:#64748b;">📅 Date</td><td><strong>{found['date']}</strong></td></tr>
-                        <tr><td style="padding:8px;color:#64748b;">🔄 Status</td><td><strong>{status}</strong></td></tr>
-                        <tr><td style="padding:8px;color:#64748b;">⏱️ Time Left</td><td><strong style="color:{timer_color};">{time_remaining}</strong></td></tr>
+                <div style="background:white;padding:25px;border-radius:20px;
+                            box-shadow:0 4px 20px rgba(0,0,0,0.08);margin-top:20px;">
+                    <h2 style="text-align:center;color:#1e3a8a;">✅ Complaint Found!</h2>
+                    <hr style="border-color:#e2e8f0;">
+                    
+                    <div style="background:#f8fafc;padding:16px;border-radius:12px;
+                                margin-bottom:16px;border-left:4px solid {status_color};">
+                        <p style="margin:0;color:#64748b;font-size:0.8rem;text-transform:uppercase;font-weight:600;">Current Status</p>
+                        <p style="margin:4px 0;color:{status_color};font-size:1.3rem;font-weight:800;">{status}</p>
+                        <p style="margin:0;color:#64748b;font-size:0.85rem;">{progress_msg}</p>
+                    </div>
+
+                    <table style="width:100%;border-collapse:separate;border-spacing:0 4px;">
+                        <tr style="background:#f8fafc;border-radius:8px;">
+                            <td style="padding:10px;color:#64748b;font-weight:600;width:40%;">🆔 Complaint ID</td>
+                            <td style="padding:10px;color:#1e293b;font-weight:700;">{found['id']}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:10px;color:#64748b;font-weight:600;">👤 Name</td>
+                            <td style="padding:10px;color:#1e293b;font-weight:600;">{found['name']}</td>
+                        </tr>
+                        <tr style="background:#f8fafc;">
+                            <td style="padding:10px;color:#64748b;font-weight:600;">📍 Location</td>
+                            <td style="padding:10px;color:#1e293b;font-weight:600;">{found['location']}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:10px;color:#64748b;font-weight:600;">📂 Category</td>
+                            <td style="padding:10px;color:#1e293b;font-weight:600;">{found['category']}</td>
+                        </tr>
+                        <tr style="background:#f8fafc;">
+                            <td style="padding:10px;color:#64748b;font-weight:600;">🤖 AI Priority</td>
+                            <td style="padding:10px;font-weight:700;">{p_icon} {found['priority']}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:10px;color:#64748b;font-weight:600;">🏢 Department</td>
+                            <td style="padding:10px;color:#2563eb;font-weight:600;">{found['department']}</td>
+                        </tr>
+                        <tr style="background:#f8fafc;">
+                            <td style="padding:10px;color:#64748b;font-weight:600;">📋 AI Summary</td>
+                            <td style="padding:10px;color:#1e293b;">{found['summary']}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:10px;color:#64748b;font-weight:600;">📅 Submitted</td>
+                            <td style="padding:10px;color:#1e293b;">{found['date']}</td>
+                        </tr>
+                        <tr style="background:#f8fafc;">
+                            <td style="padding:10px;color:#64748b;font-weight:600;">⏱️ Time Left</td>
+                            <td style="padding:10px;font-weight:700;color:{timer_color};">{time_remaining}</td>
+                        </tr>
                     </table>
+
+                    <div style="margin-top:16px;">
+                        <p style="color:#64748b;font-size:0.85rem;margin-bottom:6px;font-weight:600;">Progress: {progress}%</p>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
+
                 st.progress(progress)
-                st.markdown(f"**Progress: {progress}%** — {'Waiting for action' if status=='Pending' else 'Being handled' if status=='In Progress' else '🎉 Resolved!'}")
+
+                # Status timeline
+                st.markdown(f"""
+                <div style="background:white;padding:20px;border-radius:16px;
+                            box-shadow:0 2px 10px rgba(0,0,0,0.06);margin-top:16px;">
+                    <p style="color:#1e293b;font-weight:700;margin-bottom:12px;">📍 Status Timeline</p>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                        <div style="width:28px;height:28px;border-radius:50%;
+                                    background:{'#059669' if progress>=10 else '#e2e8f0'};
+                                    display:flex;align-items:center;justify-content:center;
+                                    color:white;font-size:0.8rem;font-weight:700;">✓</div>
+                        <div>
+                            <p style="margin:0;color:#1e293b;font-weight:600;font-size:0.9rem;">Complaint Submitted</p>
+                            <p style="margin:0;color:#64748b;font-size:0.75rem;">{found['date']}</p>
+                        </div>
+                    </div>
+                    <div style="width:2px;height:20px;background:#e2e8f0;margin-left:13px;"></div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                        <div style="width:28px;height:28px;border-radius:50%;
+                                    background:{'#d97706' if progress>=60 else '#e2e8f0'};
+                                    display:flex;align-items:center;justify-content:center;
+                                    color:white;font-size:0.8rem;font-weight:700;">{'✓' if progress>=60 else '○'}</div>
+                        <div>
+                            <p style="margin:0;color:{'#1e293b' if progress>=60 else '#94a3b8'};font-weight:600;font-size:0.9rem;">In Progress</p>
+                            <p style="margin:0;color:#64748b;font-size:0.75rem;">Department working on it</p>
+                        </div>
+                    </div>
+                    <div style="width:2px;height:20px;background:#e2e8f0;margin-left:13px;"></div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="width:28px;height:28px;border-radius:50%;
+                                    background:{'#059669' if progress==100 else '#e2e8f0'};
+                                    display:flex;align-items:center;justify-content:center;
+                                    color:white;font-size:0.8rem;font-weight:700;">{'✓' if progress==100 else '○'}</div>
+                        <div>
+                            <p style="margin:0;color:{'#1e293b' if progress==100 else '#94a3b8'};font-weight:600;font-size:0.9rem;">Resolved</p>
+                            <p style="margin:0;color:#64748b;font-size:0.75rem;">Issue fixed successfully</p>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
                 if found.get('image'):
                     st.image(base64.b64decode(found['image']), width=400, caption="Your Submitted Photo")
             else:
-                st.error("❌ Complaint ID not found. Please check and try again.")
+                st.error("❌ Complaint ID not found! Please check and try again.")
+                st.info("💡 Tip: Complaint IDs look like PP-2024-001")
 
 # ============================================
 # PAGE 3 - SATELLITE MAP
@@ -1483,7 +1560,157 @@ elif page == "📊 Admin Dashboard":
 
 # ============================================
 # ============================================
-# PAGE - LEADERBOARD
+# ============================================
+# PAGE - FEEDBACK
+# ============================================
+elif page == "💬 Feedback":
+    st.markdown('<p class="section-header">💬 Share Your Feedback</p>', unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        st.markdown("""
+        <div style="background:white;padding:30px;border-radius:20px;
+                    box-shadow:0 4px 20px rgba(0,0,0,0.08);text-align:center;
+                    margin-bottom:20px;">
+            <h2 style="color:#1e3a8a;">⭐ Rate Our Service</h2>
+            <p style="color:#64748b;">Help us improve by sharing your experience!</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        with st.form("feedback_form"):
+            complaint_id = st.text_input("🆔 Your Complaint ID", placeholder="PP-2024-001")
+            
+            rating = st.selectbox("⭐ Rate Your Experience", [
+                "⭐⭐⭐⭐⭐ Excellent",
+                "⭐⭐⭐⭐ Good",
+                "⭐⭐⭐ Average",
+                "⭐⭐ Poor",
+                "⭐ Very Poor"
+            ])
+            
+            service_rating = st.selectbox("🏢 Department Service Quality", [
+                "Very Fast Response",
+                "Fast Response",
+                "Normal Response",
+                "Slow Response",
+                "No Response Yet"
+            ])
+            
+            feedback_text = st.text_area(
+                "📝 Your Comments",
+                placeholder="Tell us about your experience...",
+                height=120
+            )
+            
+            recommend = st.selectbox("👥 Would you recommend Public Pulse?", [
+                "Yes, definitely!",
+                "Yes, probably",
+                "Not sure",
+                "Probably not",
+                "No"
+            ])
+
+            submitted = st.form_submit_button("📤 Submit Feedback", use_container_width=True)
+
+            if submitted:
+                if not complaint_id:
+                    st.error("Please enter your Complaint ID!")
+                else:
+                    stars = rating.count("⭐")
+                    st.markdown(f"""
+                    <div style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);
+                                padding:25px;border-radius:16px;border:1px solid #10b981;
+                                text-align:center;">
+                        <h2 style="color:#065f46;">🙏 Thank You for Your Feedback!</h2>
+                        <p style="color:#1e293b;">Your feedback helps us serve citizens better!</p>
+                        <hr style="border-color:#10b981;">
+                        <p style="color:#1e293b;"><strong>Complaint ID:</strong> {complaint_id}</p>
+                        <p style="color:#1e293b;"><strong>Your Rating:</strong> {rating}</p>
+                        <p style="color:#1e293b;"><strong>Service Quality:</strong> {service_rating}</p>
+                        <p style="color:#1e293b;"><strong>Comments:</strong> {feedback_text if feedback_text else 'No comments'}</p>
+                        <p style="color:#1e293b;"><strong>Recommend:</strong> {recommend}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    # WhatsApp confirmation
+                    st.markdown(f"""
+                    <div class="whatsapp-container" style="margin-top:16px;">
+                        <div class="whatsapp-header">
+                            <div style="background:#25d366;width:38px;height:38px;border-radius:50%;
+                                        display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🏛️</div>
+                            <div>
+                                <div style="color:#ffffff;font-weight:700;font-size:0.9rem;">Public Pulse Official</div>
+                                <div style="color:#25d366;font-size:0.75rem;">● Online</div>
+                            </div>
+                        </div>
+                        <div class="whatsapp-body">
+                            <div class="whatsapp-bubble">
+                                <p style="margin:0 0 6px 0;color:#075e54;font-weight:700;">🙏 Feedback Received!</p>
+                                <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">Thank you for rating us {rating}</p>
+                                <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">Your feedback has been recorded for complaint <strong>{complaint_id}</strong></p>
+                                <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">We will keep improving our services! 💪</p>
+                                <div class="whatsapp-tick">✓✓ Delivered</div>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+# ============================================
+# PAGE - QR CODE
+# ============================================
+elif page == "📱 QR Code":
+    st.markdown('<p class="section-header">📱 Scan & Share Public Pulse</p>', unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        st.markdown("""
+        <div style="background:white;padding:30px;border-radius:20px;
+                    box-shadow:0 4px 20px rgba(0,0,0,0.08);text-align:center;">
+            <h2 style="color:#1e3a8a;">📱 Download Public Pulse</h2>
+            <p style="color:#64748b;">Scan the QR code below to open the app on your phone!</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("###")
+
+        try:
+            st.image("public_pulse_qr.png", width=280, caption="Scan to open Public Pulse")
+        except:
+            st.markdown("""
+            <div style="background:#f8fafc;border:2px dashed #2563eb;border-radius:16px;
+                        padding:40px;text-align:center;">
+                <p style="font-size:4rem;">📱</p>
+                <p style="color:#1e3a8a;font-weight:700;">QR Code</p>
+                <p style="color:#64748b;">publicpulse.streamlit.app</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("""
+        <div style="background:white;padding:20px;border-radius:16px;
+                    box-shadow:0 2px 10px rgba(0,0,0,0.06);margin-top:16px;">
+            <h3 style="color:#1e3a8a;text-align:center;">📲 How to Install</h3>
+            <div style="background:#f8fafc;padding:12px;border-radius:10px;margin:8px 0;">
+                <p style="margin:4px 0;color:#1e293b;"><strong>Android:</strong></p>
+                <p style="margin:4px 0;color:#64748b;">1. Scan QR code</p>
+                <p style="margin:4px 0;color:#64748b;">2. Tap ⋮ menu in Chrome</p>
+                <p style="margin:4px 0;color:#64748b;">3. Tap "Add to Home Screen"</p>
+            </div>
+            <div style="background:#f8fafc;padding:12px;border-radius:10px;margin:8px 0;">
+                <p style="margin:4px 0;color:#1e293b;"><strong>iPhone:</strong></p>
+                <p style="margin:4px 0;color:#64748b;">1. Scan QR code</p>
+                <p style="margin:4px 0;color:#64748b;">2. Tap Share button in Safari</p>
+                <p style="margin:4px 0;color:#64748b;">3. Tap "Add to Home Screen"</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+        <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:16px;
+                    border-radius:14px;text-align:center;margin-top:16px;">
+            <p style="color:white;font-weight:700;margin:0;">🌐 Live URL</p>
+            <p style="color:#93c5fd;margin:4px 0;font-size:0.9rem;">publicpulse.streamlit.app</p>
+        </div>
+        """, unsafe_allow_html=True)
 # ============================================
 elif page == "🏅 Leaderboard":
     st.markdown('<p class="section-header">🏅 Department Performance Leaderboard</p>', unsafe_allow_html=True)
@@ -1627,7 +1854,8 @@ elif page == "🔐 Admin Login":
                 if login_btn:
                     if username=="admin" and password==ADMIN_PASSWORD:
                         st.session_state.admin_logged_in = True
-                        st.success("✅ Login successful!")
+                        st.success("✅ Login successful! Welcome Admin!")
+                        st.info("🗺️ Satellite Map, Heatmap, Predictive Alerts and Dashboard are now unlocked!")
                         st.rerun()
                     else:
                         st.error("❌ Invalid credentials. Try admin / admin123")

@@ -11,9 +11,6 @@ from folium.plugins import HeatMap
 from streamlit_folium import st_folium
 import time
 
-GEMINI_API_KEY = "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"
-
-# Using Groq API - Free and unlimited
 GROQ_API_KEY = "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"
 ADMIN_PASSWORD = "admin123"
 

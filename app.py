@@ -1,5 +1,5 @@
 import streamlit as st
-import google.generativeai as genai
+import requests
 import pandas as pd
 import json
 from datetime import datetime, timedelta
@@ -11,11 +11,11 @@ from folium.plugins import HeatMap
 from streamlit_folium import st_folium
 import time
 
-GEMINI_API_KEY = "AIzaSyCx2Z22juGpoorHjA3QKop8aA2m0aM2x-o"
+GEMINI_API_KEY = "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"
 
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
-
+# Using Groq API - Free and unlimited
+GROQ_API_KEY = "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"
+ADMIN_PASSWORD = "admin123"
 
 st.set_page_config(
     page_title="Public Pulse | Smart Citizen Services",
@@ -26,8 +26,358 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    * { font-family: 'Inter', sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+
+    /* PWA MOBILE APP FEEL */
+    .main .block-container {
+        padding: 0.5rem 0.8rem !important;
+        max-width: 100% !important;
+    }
+
+    /* HIDE STREAMLIT BRANDING */
+    #MainMenu { visibility: hidden; }
+    footer { visibility: hidden; }
+    header { visibility: hidden; }
+    
+    /* MOBILE BOTTOM NAV FEEL */
+    section[data-testid="stSidebar"] {
+        background: #ffffff !important;
+        border-right: 1px solid #e5e7eb !important;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.08) !important;
+    }
+
+    /* APP HEADER */
+    .app-header {
+        background: linear-gradient(135deg, #1e3a8a, #2563eb);
+        padding: 16px 20px;
+        border-radius: 0 0 20px 20px;
+        color: white;
+        text-align: center;
+        margin-bottom: 16px;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 4px 20px rgba(37,99,235,0.3);
+    }
+
+    .app-header h1 {
+        font-size: 1.6rem !important;
+        font-weight: 800 !important;
+        margin: 0 !important;
+        letter-spacing: -0.5px !important;
+    }
+
+    .app-header p {
+        font-size: 0.72rem !important;
+        opacity: 0.85 !important;
+        margin: 4px 0 0 0 !important;
+    }
+
+    /* MOBILE CARDS */
+    .mobile-card {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    /* METRIC CARDS MOBILE */
+    .metric-card {
+        background: white;
+        padding: 16px 12px;
+        border-radius: 14px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        border-top: 3px solid #2563eb;
+        margin-bottom: 8px;
+    }
+
+    .metric-number {
+        font-size: 2rem !important;
+        font-weight: 800;
+        color: #1e3a8a;
+    }
+
+    .metric-label {
+        font-size: 0.72rem;
+        color: #64748b;
+        margin-top: 3px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* COMPLAINT CARDS MOBILE */
+    .complaint-card {
+        background: white;
+        padding: 16px;
+        border-radius: 14px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        border-left: 4px solid #2563eb;
+        color: #1e293b !important;
+    }
+
+    .complaint-card * { color: #1e293b !important; }
+
+    /* SECTION HEADER MOBILE */
+    .section-header {
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        color: #000000 !important;
+        margin-bottom: 14px !important;
+        padding-bottom: 8px !important;
+        border-bottom: 2px solid #2563eb !important;
+        -webkit-text-fill-color: #000000 !important;
+    }
+
+    /* BUTTONS MOBILE */
+    .stButton>button {
+        background: linear-gradient(135deg, #1e3a8a, #2563eb) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 12px !important;
+        padding: 14px 20px !important;
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+        width: 100% !important;
+        box-shadow: 0 4px 15px rgba(37,99,235,0.3) !important;
+    }
+
+    .stFormSubmitButton>button {
+        background: linear-gradient(135deg, #1e3a8a, #2563eb) !important;
+        color: white !important;
+        border-radius: 12px !important;
+        font-weight: 700 !important;
+        padding: 14px !important;
+        font-size: 1rem !important;
+    }
+
+    /* INPUTS MOBILE */
+    .stTextInput>div>div>input {
+        border-radius: 10px !important;
+        border: 1.5px solid #e2e8f0 !important;
+        background: #f8fafc !important;
+        color: #1e293b !important;
+        padding: 12px 14px !important;
+        font-size: 0.95rem !important;
+    }
+
+    .stTextArea>div>div>textarea {
+        border-radius: 10px !important;
+        border: 1.5px solid #e2e8f0 !important;
+        background: #f8fafc !important;
+        color: #1e293b !important;
+        font-size: 0.95rem !important;
+    }
+
+    div[data-testid="stForm"] input {
+        background: #f8fafc !important;
+        color: #1e293b !important;
+    }
+
+    div[data-testid="stForm"] textarea {
+        background: #f8fafc !important;
+        color: #1e293b !important;
+    }
+
+    /* FORM CONTAINER */
+    div[data-testid="stForm"] {
+        background: #ffffff !important;
+        padding: 20px !important;
+        border-radius: 16px !important;
+        border: 1px solid #f1f5f9 !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+    }
+
+    /* DROPDOWN */
+    .stSelectbox [data-baseweb="select"] {
+        background: #f8fafc !important;
+        border-radius: 10px !important;
+    }
+    .stSelectbox [data-baseweb="select"] * {
+        background: #f8fafc !important;
+        color: #1e293b !important;
+    }
+    .stSelectbox svg { fill: #2563eb !important; }
+    [data-baseweb="popover"] * {
+        background: #ffffff !important;
+        color: #1e293b !important;
+    }
+
+    /* FILE UPLOADER */
+    [data-testid="stFileUploaderDropzone"] {
+        background: #f8fafc !important;
+        border: 2px dashed #2563eb !important;
+        border-radius: 12px !important;
+    }
+    [data-testid="stFileUploaderDropzone"] * { color: #1e293b !important; }
+    [data-testid="stFileUploader"] * { color: #1e293b !important; }
+    section[data-testid="stFileUploaderDropzone"] p,
+    section[data-testid="stFileUploaderDropzone"] span,
+    section[data-testid="stFileUploaderDropzone"] small,
+    div[data-testid="stFileUploader"] p,
+    div[data-testid="stFileUploader"] span { color: #64748b !important; }
+
+    /* PASSWORD */
+    [data-testid="stPasswordInput"] button {
+        background: #f8fafc !important;
+        border: none !important;
+    }
+    [data-testid="stPasswordInput"] svg {
+        fill: #2563eb !important;
+        stroke: #2563eb !important;
+    }
+
+    /* SIDEBAR MOBILE */
+    .sidebar-stats {
+        background: linear-gradient(135deg, #1e3a8a, #2563eb);
+        padding: 16px;
+        border-radius: 14px;
+        color: white;
+        margin-bottom: 16px;
+    }
+
+    /* BADGES */
+    .badge-high { background:#fee2e2; color:#dc2626 !important; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.78rem; border:1px solid #fecaca; }
+    .badge-medium { background:#fef3c7; color:#d97706 !important; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.78rem; border:1px solid #fde68a; }
+    .badge-low { background:#d1fae5; color:#059669 !important; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.78rem; border:1px solid #a7f3d0; }
+    .fake-badge { background:#fce7f3; color:#be185d !important; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.78rem; border:1px solid #fbcfe8; }
+
+    /* SUCCESS CARD */
+    .success-card {
+        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+        padding: 24px 16px;
+        border-radius: 16px;
+        border: 1px solid #10b981;
+        text-align: center;
+        color: #1e293b !important;
+    }
+
+    /* TRACK CARD */
+    .track-card {
+        background: white;
+        padding: 20px;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        color: #1e293b !important;
+    }
+    .track-card * { color: #1e293b !important; }
+
+    /* WHATSAPP */
+    .whatsapp-container {
+        max-width: 340px;
+        margin: 16px auto;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+    .whatsapp-header {
+        background: #075e54;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .whatsapp-body {
+        background: #e5ddd5;
+        padding: 16px;
+        background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .whatsapp-bubble {
+        background: #ffffff;
+        border-radius: 0 12px 12px 12px;
+        padding: 12px 14px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        max-width: 300px;
+    }
+    .whatsapp-tick {
+        text-align: right;
+        color: #34b7f1;
+        font-size: 0.7rem;
+        margin-top: 6px;
+    }
+
+    /* LEADERBOARD */
+    .rank-card {
+        background: white;
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 10px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    /* PREDICT CARD */
+    .predict-card {
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        padding: 16px;
+        border-radius: 14px;
+        color: white;
+        margin-bottom: 12px;
+    }
+
+    .fake-card {
+        background: linear-gradient(135deg, #be185d, #ec4899);
+        padding: 16px;
+        border-radius: 14px;
+        color: white;
+        margin-bottom: 12px;
+    }
+
+    /* TIMER */
+    .timer-high { color: #dc2626; font-weight: 700; }
+    .timer-medium { color: #d97706; font-weight: 700; }
+    .timer-low { color: #059669; font-weight: 700; }
+
+    /* PROGRESS */
+    .stProgress > div > div {
+        background: linear-gradient(90deg, #1e3a8a, #2563eb) !important;
+        border-radius: 10px !important;
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #2563eb; border-radius: 4px; }
+
+    /* RADIO */
+    .stRadio label { 
+        color: #000000 !important;
+        font-size: 0.9rem !important;
+        font-weight: 500 !important;
+    }
+
+    /* ALL LABELS BLACK */
+    label { color: #000000 !important; }
+    p { color: #000000 !important; }
+    .stMarkdown p { color: #000000 !important; }
+    .stMarkdown { color: #000000 !important; }
+    [data-testid="stMarkdownContainer"] p { color: #000000 !important; }
+    [data-testid="stMarkdownContainer"] { color: #000000 !important; }
+    div[data-testid="stForm"] label { color: #000000 !important; }
+    .stSelectbox label { color: #000000 !important; }
+    .stTextInput label { color: #000000 !important; }
+    .stTextArea label { color: #000000 !important; }
+    .stFileUploader label { color: #000000 !important; }
+
+    /* DIVIDER */
+    hr { border-color: #f1f5f9 !important; }
+
+    /* ALERTS */
+    .stAlert { border-radius: 12px !important; }
+
+    /* MOBILE RESPONSIVE */
+    @media (max-width: 768px) {
+        .main .block-container { padding: 0.3rem 0.5rem !important; }
+        .hero-header h1 { font-size: 1.4rem !important; }
+        .metric-number { font-size: 1.6rem !important; }
+        .complaint-card { padding: 12px !important; }
+        .section-header { font-size: 1rem !important; }
+    }
     .main { background-color: #f0f4f8; }
     .hero-header {
         background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #0ea5e9 100%);
@@ -109,6 +459,68 @@ st.markdown("""
     section[data-testid="stFileUploaderDropzone"] small,
     div[data-testid="stFileUploader"] p,
     div[data-testid="stFileUploader"] span { color: #ffffff !important; }
+
+    /* MOBILE RESPONSIVE */
+    @media (max-width: 768px) {
+        .hero-header h1 { font-size: 1.8rem !important; }
+        .hero-header { padding: 20px !important; }
+        .metric-card { padding: 15px !important; }
+        .metric-number { font-size: 1.8rem !important; }
+        .complaint-card { padding: 15px !important; }
+        [data-testid="column"] { min-width: 100% !important; }
+        .section-header { font-size: 1.2rem !important; }
+        div[data-testid="stForm"] { padding: 15px !important; }
+    }
+    
+    /* WHATSAPP STYLES */
+    .whatsapp-container {
+        max-width: 360px;
+        margin: 20px auto;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        font-family: 'Inter', sans-serif;
+    }
+    .whatsapp-header {
+        background: #075e54;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .whatsapp-body {
+        background: #e5ddd5;
+        padding: 16px;
+    }
+    .whatsapp-bubble {
+        background: #ffffff;
+        border-radius: 0 12px 12px 12px;
+        padding: 12px 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        max-width: 320px;
+    }
+    .whatsapp-tick {
+        text-align: right;
+        color: #34b7f1;
+        font-size: 0.7rem;
+        margin-top: 6px;
+    }
+
+    /* LEADERBOARD */
+    .podium-card {
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    .rank-card {
+        background: white;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 10px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -174,6 +586,30 @@ def translate_to_english(text, source_lang):
         return translated
     except:
         return text
+
+def call_ai(prompt):
+    try:
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "llama-3.3-70b-versatile",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 500
+            }
+        )
+        data = response.json()
+        if "choices" in data:
+            return data["choices"][0]["message"]["content"]
+        elif "error" in data:
+            return f"API Error: {data['error']['message']}"
+        else:
+            return f"Unexpected response: {str(data)}"
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 def analyze_complaint(description, category):
     try:
@@ -271,17 +707,26 @@ def ask_copilot(question):
         
         User Question: {question}
         """
-        response = model.generate_content(prompt)
-        return response.text.strip()
+        return call_ai(prompt)
     except Exception as e:
-        return f"Error: {str(e)} — Please check your Gemini API key!"
+        return f"Error: {str(e)}"
 
 # ============================================
 st.markdown("""
-<div class="hero-header">
-    <h1>🏛️ Public Pulse</h1>
-    <p>AI-Powered Smart Citizen Service Oversight System | Ratan Tata Innovation Hub</p>
-    <p style="font-size:0.85rem;opacity:0.8;">🌐 Multilingual | 🔍 Fake Detector | 🗺️ Satellite Map | 🤖 Predictive AI | ⏱️ Live Timers</p>
+<div class="app-header">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;">
+        <div style="background:rgba(255,255,255,0.2);width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">🏛️</div>
+        <div style="text-align:left;">
+            <h1 style="color:white;margin:0;font-size:1.5rem;font-weight:800;">Public Pulse</h1>
+            <p style="color:rgba(255,255,255,0.8);margin:0;font-size:0.72rem;">AI Citizen Services • Ratan Tata Innovation Hub</p>
+        </div>
+    </div>
+    <div style="display:flex;justify-content:center;gap:12px;margin-top:12px;flex-wrap:wrap;">
+        <span style="background:rgba(255,255,255,0.15);color:white;padding:4px 10px;border-radius:20px;font-size:0.7rem;font-weight:600;">🌐 Multilingual</span>
+        <span style="background:rgba(255,255,255,0.15);color:white;padding:4px 10px;border-radius:20px;font-size:0.7rem;font-weight:600;">🔍 Fake Detector</span>
+        <span style="background:rgba(255,255,255,0.15);color:white;padding:4px 10px;border-radius:20px;font-size:0.7rem;font-weight:600;">🗺️ Satellite Map</span>
+        <span style="background:rgba(255,255,255,0.15);color:white;padding:4px 10px;border-radius:20px;font-size:0.7rem;font-weight:600;">🤖 Predictive AI</span>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 # ============================================
@@ -353,6 +798,7 @@ with st.sidebar:
         "🤖 AI Assistant",
         "🔮 Predictive Alerts",
         "📊 Admin Dashboard",
+        "🏅 Leaderboard",
         "🔐 Admin Login"
     ])
     st.markdown("---")
@@ -443,6 +889,35 @@ if page == "🏠 Submit Complaint":
                             "fake_reason": ""
                         }
                         st.session_state.complaints.append(complaint)
+
+                        # WhatsApp Simulation
+                        deadline_msg = "24 hours" if ai_result["priority"]=="High" else "48 hours" if ai_result["priority"]=="Medium" else "72 hours"
+                        st.markdown(f"""
+                        <div class="whatsapp-container">
+                            <div class="whatsapp-header">
+                                <div style="background:#25d366;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🏛️</div>
+                                <div>
+                                    <div style="color:#ffffff;font-weight:700;font-size:0.9rem;">Public Pulse Official</div>
+                                    <div style="color:#25d366;font-size:0.75rem;">● Online</div>
+                                </div>
+                            </div>
+                            <div class="whatsapp-body">
+                                <div class="whatsapp-bubble">
+                                    <p style="margin:0 0 6px 0;color:#075e54;font-weight:700;font-size:0.85rem;">🏛️ Public Pulse Alert</p>
+                                    <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">Hello <strong>{name}</strong>! 👋</p>
+                                    <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">✅ Complaint registered successfully!</p>
+                                    <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">📋 ID: <strong>{complaint_id}</strong></p>
+                                    <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">📂 {category}</p>
+                                    <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">⚡ Priority: <strong>{ai_result["priority"]}</strong></p>
+                                    <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">🏢 {ai_result.get("department","General Admin")}</p>
+                                    <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">⏰ Resolution: <strong>{deadline_msg}</strong></p>
+                                    <p style="margin:6px 0 0 0;color:#075e54;font-size:0.75rem;font-weight:600;">Track: PublicPulse.streamlit.app</p>
+                                    <div class="whatsapp-tick">✓✓ Delivered</div>
+                                </div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
                         p_icon = "🔴" if ai_result["priority"]=="High" else "🟡" if ai_result["priority"]=="Medium" else "🟢"
                         deadline_hours = get_deadline_hours(ai_result["priority"])
                         st.markdown(f"""
@@ -983,11 +1458,159 @@ elif page == "📊 Admin Dashboard":
                         if c['id'] == complaint['id']:
                             c['status'] = new_status
                     st.success(f"✅ Status updated to {new_status}!")
+                    status_emoji = "🔄" if new_status=="In Progress" else "✅" if new_status=="Resolved" else "⏳"
+                    status_msg = "is being actively worked on!" if new_status=="In Progress" else "has been RESOLVED! 🎉" if new_status=="Resolved" else "is pending assignment."
+                    st.markdown(f"""
+                    <div class="whatsapp-container">
+                        <div class="whatsapp-header">
+                            <div style="background:#25d366;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🏛️</div>
+                            <div>
+                                <div style="color:#ffffff;font-weight:700;font-size:0.9rem;">Public Pulse Official</div>
+                                <div style="color:#25d366;font-size:0.75rem;">● Online</div>
+                            </div>
+                        </div>
+                        <div class="whatsapp-body">
+                            <div class="whatsapp-bubble">
+                                <p style="margin:0 0 6px 0;color:#075e54;font-weight:700;font-size:0.85rem;">🔔 Status Update</p>
+                                <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">Hello <strong>{complaint['name']}</strong>! 👋</p>
+                                <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">{status_emoji} Your complaint <strong>{complaint['id']}</strong> {status_msg}</p>
+                                <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">Status: <strong>{new_status}</strong></p>
+                                <p style="margin:6px 0 0 0;color:#075e54;font-size:0.75rem;">Thank you for using Public Pulse! 🏛️</p>
+                                <div class="whatsapp-tick">✓✓ Delivered</div>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
                     st.rerun()
             st.markdown("---")
 
 # ============================================
-# PAGE 8 - ADMIN LOGIN
+# ============================================
+# PAGE - LEADERBOARD
+# ============================================
+elif page == "🏅 Leaderboard":
+    st.markdown('<p class="section-header">🏅 Department Performance Leaderboard</p>', unsafe_allow_html=True)
+
+    complaints = st.session_state.complaints
+    real_complaints = [c for c in complaints if not c.get('is_fake', False)]
+
+    dept_stats = {}
+    for c in real_complaints:
+        dept = c.get('department', 'General Administration')
+        if dept not in dept_stats:
+            dept_stats[dept] = {'total':0,'resolved':0,'pending':0,'high':0,'in_progress':0}
+        dept_stats[dept]['total'] += 1
+        if c['status'] == 'Resolved': dept_stats[dept]['resolved'] += 1
+        if c['status'] == 'Pending': dept_stats[dept]['pending'] += 1
+        if c['status'] == 'In Progress': dept_stats[dept]['in_progress'] += 1
+        if c['priority'] == 'High': dept_stats[dept]['high'] += 1
+
+    leaderboard = []
+    for dept, stats in dept_stats.items():
+        rate = int((stats['resolved']/stats['total'])*100) if stats['total'] > 0 else 0
+        score = round((rate * 0.6) + ((stats['total']/max(1,len(real_complaints)))*40), 1)
+        leaderboard.append({
+            'department': dept, 'total': stats['total'],
+            'resolved': stats['resolved'], 'pending': stats['pending'],
+            'in_progress': stats['in_progress'], 'high': stats['high'],
+            'rate': rate, 'score': score
+        })
+
+    leaderboard.sort(key=lambda x: x['score'], reverse=True)
+    medals = ["🥇","🥈","🥉"]
+    podium_colors = ["#f59e0b","#6366f1","#10b981"]
+    podium_shadows = ["rgba(245,158,11,0.3)","rgba(99,102,241,0.3)","rgba(16,185,129,0.3)"]
+
+    # TOP 3 PODIUM
+    st.markdown("### 🏆 Top Performers")
+    if len(leaderboard) >= 3:
+        col1, col2, col3 = st.columns(3)
+        podium_order = [1, 0, 2]
+        cols = [col1, col2, col3]
+        for i, (col, rank) in enumerate(zip(cols, podium_order)):
+            if rank < len(leaderboard):
+                d = leaderboard[rank]
+                with col:
+                    st.markdown(f"""
+                    <div style="background:linear-gradient(135deg,{podium_colors[rank]}20,{podium_colors[rank]}10);
+                                border:2px solid {podium_colors[rank]}60;
+                                border-radius:20px;padding:25px;text-align:center;
+                                box-shadow:0 8px 25px {podium_shadows[rank]};
+                                margin-bottom:15px;">
+                        <div style="font-size:3rem;">{medals[rank]}</div>
+                        <div style="font-weight:800;color:#1e293b;font-size:0.9rem;margin:10px 0;">{d['department'][:22]}</div>
+                        <div style="font-size:2rem;font-weight:900;color:{podium_colors[rank]};">{d['rate']}%</div>
+                        <div style="color:#64748b;font-size:0.75rem;margin-bottom:8px;">Resolution Rate</div>
+                        <div style="background:{podium_colors[rank]}20;padding:6px;border-radius:8px;">
+                            <span style="color:{podium_colors[rank]};font-weight:700;font-size:0.85rem;">Score: {d['score']}</span>
+                        </div>
+                        <div style="margin-top:10px;font-size:0.8rem;color:#64748b;">
+                            ✅ {d['resolved']} resolved | 📋 {d['total']} total
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("### 📊 Full Rankings")
+
+    for i, dept in enumerate(leaderboard):
+        medal = medals[i] if i < 3 else f"#{i+1}"
+        rate = dept['rate']
+        bar_color = "#16a34a" if rate >= 70 else "#f59e0b" if rate >= 40 else "#ef4444"
+        rate_color = "#16a34a" if rate >= 70 else "#d97706" if rate >= 40 else "#dc2626"
+        grade = "⭐ Excellent" if rate >= 70 else "👍 Good" if rate >= 40 else "⚠️ Needs Work"
+
+        st.markdown(f"""
+        <div class="rank-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span style="font-size:2rem;">{medal}</span>
+                    <div>
+                        <div style="font-weight:700;color:#1e293b;font-size:1rem;">{dept['department']}</div>
+                        <div style="color:#64748b;font-size:0.8rem;">
+                            📋 Total: {dept['total']} &nbsp;|&nbsp; 
+                            ✅ Resolved: {dept['resolved']} &nbsp;|&nbsp; 
+                            ⏳ Pending: {dept['pending']} &nbsp;|&nbsp; 
+                            🔄 In Progress: {dept['in_progress']}
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:1.8rem;font-weight:800;color:{rate_color};">{rate}%</div>
+                    <div style="color:#64748b;font-size:0.75rem;">{grade}</div>
+                </div>
+            </div>
+            <div style="background:#f3f4f6;border-radius:10px;height:8px;overflow:hidden;">
+                <div style="background:{bar_color};width:{rate}%;height:100%;border-radius:10px;"></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("### 📈 Overall Statistics")
+
+    total_c = len(real_complaints)
+    total_r = len([c for c in real_complaints if c['status']=='Resolved'])
+    overall = int((total_r/total_c)*100) if total_c > 0 else 0
+    best = leaderboard[0]['department'] if leaderboard else "N/A"
+
+    c1,c2,c3,c4 = st.columns(4)
+    with c1:
+        st.markdown(f"""<div class="metric-card" style="border-top-color:#6366f1;">
+            <div class="metric-number" style="color:#6366f1;">{overall}%</div>
+            <div class="metric-label">Overall Resolution</div></div>""", unsafe_allow_html=True)
+    with c2:
+        st.markdown(f"""<div class="metric-card" style="border-top-color:#f59e0b;">
+            <div class="metric-number" style="color:#f59e0b;">{len(dept_stats)}</div>
+            <div class="metric-label">Departments Active</div></div>""", unsafe_allow_html=True)
+    with c3:
+        st.markdown(f"""<div class="metric-card" style="border-top-color:#10b981;">
+            <div class="metric-number" style="color:#10b981;">{total_r}</div>
+            <div class="metric-label">Total Resolved</div></div>""", unsafe_allow_html=True)
+    with c4:
+        st.markdown(f"""<div class="metric-card" style="border-top-color:#dc2626;">
+            <div class="metric-number" style="color:#dc2626;">🏆</div>
+            <div class="metric-label">Best: {best[:12]}</div></div>""", unsafe_allow_html=True)
 # ============================================
 elif page == "🔐 Admin Login":
     st.markdown('<p class="section-header">🔐 Admin Login</p>', unsafe_allow_html=True)

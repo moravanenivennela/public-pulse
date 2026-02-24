@@ -1,8 +1,8 @@
 streamlit
-google-generativeai
+requests
 pandas
 plotly
-pillow
 folium
 streamlit-folium
 deep-translator
+pillow

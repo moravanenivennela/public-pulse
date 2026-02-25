@@ -15,6 +15,57 @@ GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "gsk_S8K1YLkfLyU6vvSM4glMWGdyb3FYD
 ADMIN_PASSWORD = "admin123"
 
 # ============================================
+# REAL WHATSAPP NOTIFICATION via Twilio
+# ============================================
+def send_whatsapp_notification(phone, name, complaint_id, priority, department, deadline_msg):
+    try:
+        account_sid = st.secrets.get("TWILIO_ACCOUNT_SID", "")
+        auth_token = st.secrets.get("TWILIO_AUTH_TOKEN", "")
+        from_number = st.secrets.get("TWILIO_WHATSAPP_FROM", "whatsapp:+14155238886")
+
+        if not account_sid or not auth_token:
+            return False, "Twilio credentials not configured"
+
+        # Format phone number
+        phone_clean = ''.join(filter(str.isdigit, str(phone)))
+        if len(phone_clean) == 10:
+            phone_clean = "91" + phone_clean
+        to_number = f"whatsapp:+{phone_clean}"
+
+        message_body = f"""🏛️ *Public Pulse Alert*
+
+Hello *{name}*! 👋
+
+✅ Your complaint has been registered successfully!
+
+📋 ID: *{complaint_id}*
+⚡ Priority: *{priority}*
+🏢 Dept: {department}
+⏰ Resolution: Within {deadline_msg}
+
+Track your complaint at:
+https://moravanenivennela-public-pulse.streamlit.app
+
+Thank you for using Public Pulse! 🙏"""
+
+        response = requests.post(
+            f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json",
+            auth=(account_sid, auth_token),
+            data={
+                "From": from_number,
+                "To": to_number,
+                "Body": message_body
+            }
+        )
+        result = response.json()
+        if response.status_code == 201:
+            return True, result.get("sid", "")
+        else:
+            return False, result.get("message", "Failed to send")
+    except Exception as e:
+        return False, str(e)
+
+# ============================================
 # TRANSLATIONS
 # ============================================
 TRANSLATIONS = {
@@ -227,73 +278,111 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    :root {
+        --bg:#f8fafc;--card:#ffffff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;
+        --blue:#2563eb;--blue-dark:#1d4ed8;--blue-light:#eff6ff;
+        --green:#16a34a;--red:#dc2626;--amber:#d97706;--purple:#7c3aed;
+        --sb-bg:#ffffff;--sb-border:#2563eb;--sb-text:#1e293b;--sb-muted:#64748b;
+        --sb-hover:#eff6ff;--sb-active:#dbeafe;
+        --r:14px;--s1:0 1px 6px rgba(0,0,0,0.06);--s2:0 4px 18px rgba(0,0,0,0.10);--s3:0 10px 40px rgba(0,0,0,0.14);
+    }
     * { font-family: 'Inter', sans-serif !important; box-sizing: border-box; }
-    .main .block-container { padding: 0.5rem 0.8rem !important; max-width: 100% !important; }
-    #MainMenu { visibility: hidden; }
-    footer { visibility: hidden; }
-    header { visibility: hidden; }
-    section[data-testid="stSidebar"] { background: #ffffff !important; border-right: 1px solid #e5e7eb !important; box-shadow: 2px 0 10px rgba(0,0,0,0.08) !important; }
-    .app-header { background: linear-gradient(135deg, #1e3a8a, #2563eb); padding: 16px 20px; border-radius: 0 0 20px 20px; color: white; text-align: center; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(37,99,235,0.3); }
-    .metric-card { background: white; padding: 16px 12px; border-radius: 14px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.06); border-top: 3px solid #2563eb; margin-bottom: 8px; }
-    .metric-number { font-size: 2rem !important; font-weight: 800; color: #1e3a8a; }
-    .metric-label { font-size: 0.72rem; color: #64748b; margin-top: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-    .complaint-card { background: white; padding: 16px; border-radius: 14px; margin-bottom: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); border-left: 4px solid #2563eb; color: #1e293b !important; }
-    .complaint-card * { color: #1e293b !important; }
-    .section-header { font-size: 1.1rem !important; font-weight: 700 !important; color: #000000 !important; margin-bottom: 14px !important; padding-bottom: 8px !important; border-bottom: 2px solid #2563eb !important; -webkit-text-fill-color: #000000 !important; }
-    .stButton>button { background: linear-gradient(135deg, #1e3a8a, #2563eb) !important; color: #ffffff !important; border: none !important; border-radius: 12px !important; padding: 14px 20px !important; font-weight: 700 !important; font-size: 0.95rem !important; width: 100% !important; box-shadow: 0 4px 15px rgba(37,99,235,0.3) !important; }
-    .stFormSubmitButton>button { background: linear-gradient(135deg, #1e3a8a, #2563eb) !important; color: white !important; border-radius: 12px !important; font-weight: 700 !important; padding: 14px !important; font-size: 1rem !important; }
-    .stTextInput>div>div>input { border-radius: 10px !important; border: 1.5px solid #e2e8f0 !important; background: #ffffff !important; color: #000000 !important; padding: 12px 14px !important; font-size: 0.95rem !important; caret-color: #000000 !important; }
-    .stTextArea>div>div>textarea { border-radius: 10px !important; border: 1.5px solid #e2e8f0 !important; background: #ffffff !important; color: #000000 !important; font-size: 0.95rem !important; }
-    div[data-testid="stForm"] input { background: #ffffff !important; color: #000000 !important; }
-    div[data-testid="stForm"] textarea { background: #ffffff !important; color: #000000 !important; }
-    div[data-testid="stForm"] { background: #ffffff !important; padding: 20px !important; border-radius: 16px !important; border: 1px solid #f1f5f9 !important; box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important; }
-    .stSelectbox [data-baseweb="select"] { background: #ffffff !important; border-radius: 10px !important; }
-    .stSelectbox [data-baseweb="select"] * { background: #ffffff !important; color: #000000 !important; }
-    .stSelectbox svg { fill: #2563eb !important; }
-    [data-baseweb="popover"] * { background: #ffffff !important; color: #000000 !important; }
-    [data-testid="stFileUploaderDropzone"] { background: #f8fafc !important; border: 2px dashed #2563eb !important; border-radius: 12px !important; }
-    [data-testid="stFileUploaderDropzone"] * { color: #000000 !important; }
-    [data-testid="stFileUploader"] * { color: #000000 !important; }
-    [data-testid="stPasswordInput"] button { background: #ffffff !important; border: none !important; }
-    [data-testid="stPasswordInput"] svg { fill: #2563eb !important; stroke: #2563eb !important; }
-    .sidebar-stats { background: linear-gradient(135deg, #1e3a8a, #2563eb); padding: 16px; border-radius: 14px; color: white; margin-bottom: 16px; }
-    .badge-high { background:#fee2e2; color:#dc2626 !important; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.78rem; border:1px solid #fecaca; }
-    .badge-medium { background:#fef3c7; color:#d97706 !important; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.78rem; border:1px solid #fde68a; }
-    .badge-low { background:#d1fae5; color:#059669 !important; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.78rem; border:1px solid #a7f3d0; }
-    .fake-badge { background:#fce7f3; color:#be185d !important; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.78rem; border:1px solid #fbcfe8; }
-    .success-card { background: linear-gradient(135deg, #d1fae5, #a7f3d0); padding: 24px 16px; border-radius: 16px; border: 1px solid #10b981; text-align: center; color: #1e293b !important; }
-    .track-card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); color: #1e293b !important; }
-    .track-card * { color: #1e293b !important; }
-    .whatsapp-container { max-width: 340px; margin: 16px auto; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.15); }
+    .main { background: var(--bg) !important; }
+    .main .block-container { padding: 0 1rem 2rem !important; max-width: 100% !important; }
+    #MainMenu, footer, header { visibility: hidden; }
+    section[data-testid="stSidebar"] { background: var(--sb-bg) !important; border-right: 3px solid var(--sb-border) !important; box-shadow: 4px 0 20px rgba(37,99,235,0.08) !important; }
+    section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] span, section[data-testid="stSidebar"] label, section[data-testid="stSidebar"] small, section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] h3 { color: var(--sb-text) !important; -webkit-text-fill-color: var(--sb-text) !important; }
+    section[data-testid="stSidebar"] div { color: var(--sb-text) !important; }
+    section[data-testid="stSidebar"] .stRadio label { color: var(--sb-text) !important; -webkit-text-fill-color: var(--sb-text) !important; font-size: 0.88rem !important; font-weight: 500 !important; padding: 8px 10px !important; border-radius: 8px !important; transition: background 0.15s !important; display: block !important; }
+    section[data-testid="stSidebar"] .stRadio label:hover { background: var(--sb-hover) !important; color: var(--blue) !important; -webkit-text-fill-color: var(--blue) !important; }
+    section[data-testid="stSidebar"] .stRadio > label { color: var(--sb-muted) !important; -webkit-text-fill-color: var(--sb-muted) !important; font-size: 0.7rem !important; font-weight: 700 !important; letter-spacing: 1px !important; text-transform: uppercase !important; }
+    section[data-testid="stSidebar"] hr { border-color: var(--border) !important; margin: 10px 0 !important; }
+    section[data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] { background: #f1f5f9 !important; border: 1.5px solid var(--border) !important; border-radius: 8px !important; }
+    section[data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] * { background: #f1f5f9 !important; color: var(--sb-text) !important; -webkit-text-fill-color: var(--sb-text) !important; }
+    section[data-testid="stSidebar"] .stSelectbox svg { fill: var(--blue) !important; }
+    .sidebar-stats { background: var(--blue-light) !important; border: 1.5px solid #bfdbfe !important; padding: 14px 16px !important; border-radius: 12px !important; margin-bottom: 12px !important; }
+    .sidebar-stats h3 { color: var(--blue-dark) !important; -webkit-text-fill-color: var(--blue-dark) !important; font-size: 0.75rem !important; font-weight: 700 !important; letter-spacing: 0.8px !important; text-transform: uppercase !important; margin: 0 0 10px !important; }
+    .sidebar-stats p { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; font-size: 0.82rem !important; margin: 5px 0 !important; }
+    .sidebar-stats strong { color: var(--blue-dark) !important; -webkit-text-fill-color: var(--blue-dark) !important; font-weight: 700 !important; }
+    [data-testid="collapsedControl"] { display: flex !important; visibility: visible !important; background: var(--blue) !important; border-radius: 0 10px 10px 0 !important; box-shadow: var(--s2) !important; z-index: 999 !important; }
+    [data-testid="collapsedControl"] svg { fill: #ffffff !important; }
+    .main p { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
+    .main label { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; font-weight: 500 !important; }
+    .stMarkdown p { color: var(--text) !important; }
+    [data-testid="stMarkdownContainer"] { color: var(--text) !important; }
+    [data-testid="stMarkdownContainer"] p { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
+    .stRadio label { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; font-size: 0.88rem !important; }
+    .stTextInput label, .stTextArea label, .stSelectbox label, .stFileUploader label { color: var(--muted) !important; -webkit-text-fill-color: var(--muted) !important; font-size: 0.82rem !important; font-weight: 600 !important; }
+    hr { border-color: var(--border) !important; }
+    .app-header { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); padding: 24px 28px 22px; border-radius: 0 0 24px 24px; text-align: center; margin-bottom: 24px; box-shadow: 0 6px 24px rgba(37,99,235,0.22); }
+    .app-header h1 { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; font-size: 1.7rem !important; font-weight: 800 !important; margin: 0 !important; letter-spacing: -0.3px !important; }
+    .app-header p { color: rgba(255,255,255,0.78) !important; -webkit-text-fill-color: rgba(255,255,255,0.78) !important; font-size: 0.78rem !important; margin: 4px 0 0 !important; letter-spacing: 0.3px !important; }
+    .app-header span { color: rgba(255,255,255,0.9) !important; -webkit-text-fill-color: rgba(255,255,255,0.9) !important; }
+    .section-header { font-size: 1.35rem !important; font-weight: 700 !important; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; margin-bottom: 18px !important; padding-bottom: 10px !important; border-bottom: 2px solid var(--blue) !important; }
+    .metric-card { background: var(--card); padding: 20px 14px 16px; border-radius: var(--r); text-align: center; box-shadow: var(--s1); border: 1px solid var(--border); border-top: 3px solid var(--blue); margin-bottom: 10px; transition: transform 0.2s, box-shadow 0.2s; }
+    .metric-card:hover { transform: translateY(-4px); box-shadow: var(--s2); }
+    .metric-number { font-size: 2.2rem !important; font-weight: 800 !important; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; line-height: 1 !important; }
+    .metric-label { font-size: 0.66rem !important; color: var(--muted) !important; -webkit-text-fill-color: var(--muted) !important; margin-top: 6px !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.8px !important; }
+    .complaint-card { background: var(--card); padding: 18px 20px; border-radius: var(--r); margin-bottom: 12px; box-shadow: var(--s1); border: 1px solid var(--border); border-left: 4px solid var(--blue); transition: transform 0.2s, box-shadow 0.2s; }
+    .complaint-card:hover { box-shadow: var(--s2); transform: translateX(3px); }
+    .complaint-card, .complaint-card * { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
+    .stButton > button { background: linear-gradient(135deg, #1e3a8a, #2563eb) !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; border: none !important; border-radius: 12px !important; padding: 12px 20px !important; font-weight: 600 !important; font-size: 0.9rem !important; width: 100% !important; box-shadow: 0 2px 10px rgba(37,99,235,0.3) !important; transition: all 0.18s !important; }
+    .stButton > button:hover { background: linear-gradient(135deg, #1d4ed8, #3b82f6) !important; transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(37,99,235,0.4) !important; }
+    .stFormSubmitButton > button { background: linear-gradient(135deg, #1e3a8a, #2563eb) !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; border-radius: 12px !important; font-weight: 600 !important; padding: 12px !important; box-shadow: 0 2px 10px rgba(37,99,235,0.3) !important; transition: all 0.18s !important; }
+    .stTextInput > div > div > input { border-radius: 10px !important; border: 1.5px solid var(--border) !important; background: #ffffff !important; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; padding: 11px 14px !important; font-size: 0.9rem !important; }
+    .stTextInput > div > div > input:focus { border-color: var(--blue) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.1) !important; }
+    .stTextArea > div > div > textarea { border-radius: 10px !important; border: 1.5px solid var(--border) !important; background: #ffffff !important; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; font-size: 0.9rem !important; }
+    div[data-testid="stForm"] { background: var(--card) !important; padding: 26px !important; border-radius: 18px !important; border: 1px solid var(--border) !important; box-shadow: var(--s1) !important; }
+    div[data-testid="stForm"] input { background: #ffffff !important; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
+    div[data-testid="stForm"] textarea { background: #ffffff !important; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
+    div[data-testid="stForm"] label { color: var(--muted) !important; -webkit-text-fill-color: var(--muted) !important; }
+    .stSelectbox [data-baseweb="select"] { background: #ffffff !important; border-radius: 10px !important; border: 1.5px solid var(--border) !important; }
+    .stSelectbox [data-baseweb="select"] * { background: #ffffff !important; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
+    .stSelectbox svg { fill: var(--blue) !important; }
+    [data-baseweb="popover"] { border-radius: 12px !important; box-shadow: var(--s2) !important; border: 1px solid var(--border) !important; }
+    [data-baseweb="popover"] *, [data-baseweb="menu"] { background: #ffffff !important; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
+    [data-testid="stFileUploaderDropzone"] { background: #f8fafc !important; border: 2px dashed #cbd5e1 !important; border-radius: 12px !important; }
+    [data-testid="stFileUploaderDropzone"] *, [data-testid="stFileUploader"] label { color: var(--muted) !important; -webkit-text-fill-color: var(--muted) !important; }
+    [data-testid="stPasswordInput"] input { background: #ffffff !important; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
+    [data-testid="stPasswordInput"] button { background: transparent !important; border: none !important; }
+    [data-testid="stPasswordInput"] svg { fill: var(--muted) !important; }
+    .badge-high   { background:#fef2f2; color:#b91c1c !important; -webkit-text-fill-color:#b91c1c !important; padding:3px 12px; border-radius:50px; font-weight:700; font-size:0.72rem; border:1px solid #fecaca; }
+    .badge-medium { background:#fffbeb; color:#92400e !important; -webkit-text-fill-color:#92400e !important; padding:3px 12px; border-radius:50px; font-weight:700; font-size:0.72rem; border:1px solid #fde68a; }
+    .badge-low    { background:#f0fdf4; color:#166534 !important; -webkit-text-fill-color:#166534 !important; padding:3px 12px; border-radius:50px; font-weight:700; font-size:0.72rem; border:1px solid #bbf7d0; }
+    .fake-badge   { background:#fdf4ff; color:#7e22ce !important; -webkit-text-fill-color:#7e22ce !important; padding:3px 12px; border-radius:50px; font-weight:700; font-size:0.72rem; border:1px solid #e9d5ff; }
+    .success-card { background: linear-gradient(135deg, #f0fdf4, #dcfce7); padding: 26px 20px; border-radius: 18px; border: 1px solid #86efac; text-align: center; box-shadow: 0 4px 16px rgba(22,163,74,0.1); }
+    .success-card, .success-card * { color: #14532d !important; -webkit-text-fill-color: #14532d !important; }
+    .track-card { background: var(--card); padding: 22px; border-radius: 18px; box-shadow: var(--s2); border: 1px solid var(--border); }
+    .track-card, .track-card * { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
+    .predict-card { background: linear-gradient(135deg, #1e3a8a, #1e40af); padding: 18px; border-radius: var(--r); margin-bottom: 12px; box-shadow: var(--s2); border-left: 4px solid #60a5fa; }
+    .predict-card, .predict-card * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+    .fake-card { background: linear-gradient(135deg, #7f1d1d, #991b1b); padding: 18px; border-radius: var(--r); margin-bottom: 12px; box-shadow: var(--s2); border-left: 4px solid #fca5a5; }
+    .fake-card, .fake-card * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+    .rank-card { background: var(--card); border-radius: var(--r); padding: 16px 18px; margin-bottom: 10px; border: 1px solid var(--border); box-shadow: var(--s1); transition: all 0.18s; }
+    .rank-card:hover { box-shadow: var(--s2); transform: translateX(3px); }
+    .rank-card, .rank-card * { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
+    .whatsapp-container { max-width: 360px; margin: 18px auto; border-radius: 20px; overflow: hidden; box-shadow: var(--s3); }
     .whatsapp-header { background: #075e54; padding: 12px 16px; display: flex; align-items: center; gap: 10px; }
     .whatsapp-body { background: #e5ddd5; padding: 16px; }
-    .whatsapp-bubble { background: #ffffff; border-radius: 0 12px 12px 12px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); max-width: 300px; }
-    .whatsapp-tick { text-align: right; color: #34b7f1; font-size: 0.7rem; margin-top: 6px; }
-    .rank-card { background: white; border-radius: 14px; padding: 16px; margin-bottom: 10px; border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .predict-card { background: linear-gradient(135deg, #7c3aed, #a855f7); padding: 16px; border-radius: 14px; color: white; margin-bottom: 12px; }
-    .fake-card { background: linear-gradient(135deg, #be185d, #ec4899); padding: 16px; border-radius: 14px; color: white; margin-bottom: 12px; }
-    .stProgress > div > div { background: linear-gradient(90deg, #1e3a8a, #2563eb) !important; border-radius: 10px !important; }
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: #f1f5f9; }
-    ::-webkit-scrollbar-thumb { background: #2563eb; border-radius: 4px; }
-    .stRadio label { color: #000000 !important; font-size: 0.9rem !important; font-weight: 500 !important; }
-    label { color: #000000 !important; }
-    p { color: #000000 !important; }
-    .stMarkdown p { color: #000000 !important; }
-    [data-testid="stMarkdownContainer"] p { color: #000000 !important; }
-    [data-testid="stMarkdownContainer"] { color: #000000 !important; }
-    div[data-testid="stForm"] label { color: #000000 !important; }
-    .stSelectbox label { color: #000000 !important; }
-    .stTextInput label { color: #000000 !important; }
-    .stTextArea label { color: #000000 !important; }
-    hr { border-color: #f1f5f9 !important; }
+    .whatsapp-bubble { background: #ffffff; border-radius: 4px 14px 14px 14px; padding: 12px 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); max-width: 300px; }
+    .whatsapp-bubble, .whatsapp-bubble * { color: #1e293b !important; -webkit-text-fill-color: #1e293b !important; }
+    .whatsapp-tick { text-align: right; color: #34b7f1 !important; -webkit-text-fill-color: #34b7f1 !important; font-size: 0.7rem; margin-top: 6px; }
+    .stProgress > div > div { background: linear-gradient(90deg, var(--blue), #3b82f6) !important; border-radius: 99px !important; }
+    .stProgress > div { background: var(--border) !important; border-radius: 99px !important; height: 8px !important; }
     .stAlert { border-radius: 12px !important; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
     @media (max-width: 768px) {
-        .main .block-container { padding: 0.3rem 0.5rem !important; }
-        .metric-number { font-size: 1.6rem !important; }
-        .complaint-card { padding: 12px !important; }
-        .section-header { font-size: 1rem !important; }
+        .main .block-container { padding: 0 0.6rem 1.5rem !important; }
+        .metric-number { font-size: 1.7rem !important; }
+        .complaint-card { padding: 14px !important; }
+        .section-header { font-size: 1.1rem !important; }
+        .app-header { padding: 18px 14px !important; border-radius: 0 0 18px 18px !important; }
+        div[data-testid="stForm"] { padding: 16px !important; }
+        [data-testid="collapsedControl"] { display: flex !important; visibility: visible !important; opacity: 1 !important; background: var(--blue) !important; padding: 10px 8px !important; border-radius: 0 12px 12px 0 !important; box-shadow: 2px 0 16px rgba(37,99,235,0.3) !important; z-index: 9999 !important; position: fixed !important; top: 50% !important; left: 0 !important; transform: translateY(-50%) !important; }
+        [data-testid="collapsedControl"] svg { fill: #ffffff !important; width: 22px !important; height: 22px !important; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -312,49 +401,97 @@ if 'complaints' not in st.session_state:
         {"id":"PP-2024-007","name":"Krishna Murthy","phone":"8877665544","location":"Maddilapalem, Visakhapatnam","ward":"Ward 5","category":"Road & Potholes","description":"Another pothole on the same road causing accidents","priority":"High","summary":"Multiple potholes in Maddilapalem area creating danger","department":"Roads & Infrastructure","status":"Pending","date":"2024-02-21 10:00","image":None,"lat":17.7390,"lon":83.2190,"is_fake":False,"language":"English"},
     ]
 
-if 'complaint_counter' not in st.session_state:
-    st.session_state.complaint_counter = 8
-if 'admin_logged_in' not in st.session_state:
-    st.session_state.admin_logged_in = False
-if 'copilot_open' not in st.session_state:
-    st.session_state.copilot_open = False
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = [{"role":"assistant","content":"👋 Hello! I am the Public Pulse AI Assistant. How can I help you today?"}]
-if 'citizen_lang' not in st.session_state:
-    st.session_state.citizen_lang = "English"
-if 'admin_lang' not in st.session_state:
-    st.session_state.admin_lang = "English"
+if 'complaint_counter' not in st.session_state: st.session_state.complaint_counter = 8
+if 'admin_logged_in' not in st.session_state: st.session_state.admin_logged_in = False
+if 'copilot_open' not in st.session_state: st.session_state.copilot_open = False
+if 'chat_history' not in st.session_state: st.session_state.chat_history = [{"role":"assistant","content":"👋 Hello! I am the Public Pulse AI Assistant. How can I help you today?"}]
+if 'citizen_lang' not in st.session_state: st.session_state.citizen_lang = "English"
+if 'admin_lang' not in st.session_state: st.session_state.admin_lang = "English"
 
 # ============================================
 # HELPER FUNCTIONS
 # ============================================
-def get_marker_color(priority):
-    return "red" if priority=="High" else "orange" if priority=="Medium" else "green"
-
-def get_deadline_hours(priority):
-    return 24 if priority=="High" else 72 if priority=="Medium" else 168
+def get_marker_color(priority): return "red" if priority=="High" else "orange" if priority=="Medium" else "green"
+def get_deadline_hours(priority): return 24 if priority=="High" else 72 if priority=="Medium" else 168
 
 def get_time_remaining(date_str, priority):
     try:
         submitted = datetime.strptime(date_str, "%Y-%m-%d %H:%M")
         deadline = submitted + timedelta(hours=get_deadline_hours(priority))
         remaining = deadline - datetime.now()
-        if remaining.total_seconds() <= 0:
-            return "⚠️ OVERDUE", True
+        if remaining.total_seconds() <= 0: return "⚠️ OVERDUE", True
         hours = int(remaining.total_seconds() // 3600)
         minutes = int((remaining.total_seconds() % 3600) // 60)
         return f"{hours}h {minutes}m remaining", False
-    except:
-        return "N/A", False
+    except: return "N/A", False
 
 def translate_to_english(text, source_lang):
     try:
-        if source_lang == "English":
-            return text
+        if source_lang == "English": return text
         from deep_translator import GoogleTranslator
         return GoogleTranslator(source='auto', target='en').translate(text)
+    except: return text
+
+# Known Visakhapatnam areas → real GPS coordinates
+VIZAG_LOCATIONS = {
+    "maddilapalem": (17.7384, 83.2184),
+    "mvp colony": (17.7230, 83.3012),
+    "gajuwaka": (17.6868, 83.2185),
+    "dwaraka nagar": (17.7340, 83.3200),
+    "dwarka nagar": (17.7340, 83.3200),
+    "rushikonda": (17.7828, 83.3677),
+    "seethammadhara": (17.7323, 83.3120),
+    "waltair": (17.7251, 83.3296),
+    "port area": (17.6868, 83.2774),
+    "vizag": (17.6868, 83.2185),
+    "visakhapatnam": (17.6868, 83.2185),
+    "steel plant": (17.6560, 83.1790),
+    "pendurthi": (17.8453, 83.1819),
+    "kommadi": (17.7972, 83.3724),
+    "bheemunipatnam": (17.8940, 83.4558),
+    "bhimili": (17.8940, 83.4558),
+    "anakapalle": (17.6910, 82.9980),
+    "gopalapatnam": (17.7600, 83.2200),
+    "kurmannapalem": (17.7100, 83.2700),
+    "akkayyapalem": (17.7415, 83.3198),
+    "lawsons bay": (17.7550, 83.3750),
+    "beach road": (17.7200, 83.3400),
+    "rk beach": (17.7139, 83.3412),
+    "ram nagar": (17.7200, 83.3100),
+    "narava": (17.8100, 83.2100),
+    "marripalem": (17.7540, 83.3215),
+    "jagadamba": (17.7200, 83.3050),
+    "dabagardens": (17.7280, 83.3150),
+    "daba gardens": (17.7280, 83.3150),
+    "siripuram": (17.7350, 83.3220),
+    "isakathota": (17.7480, 83.2900),
+    "yendada": (17.7750, 83.3600),
+    "tadichetlapalem": (17.7650, 83.3500),
+}
+
+def geocode_location(location_text):
+    """Convert location text to lat/lon using known areas or Nominatim API."""
+    # First try known areas (fast, no API needed)
+    loc_lower = location_text.lower()
+    for area, coords in VIZAG_LOCATIONS.items():
+        if area in loc_lower:
+            return coords
+
+    # Try Nominatim free geocoding API (no key needed)
+    try:
+        query = location_text
+        if "visakhapatnam" not in loc_lower and "vizag" not in loc_lower:
+            query += ", Visakhapatnam, Andhra Pradesh, India"
+        url = f"https://nominatim.openstreetmap.org/search?q={query}&format=json&limit=1"
+        resp = requests.get(url, headers={"User-Agent": "PublicPulse/1.0"}, timeout=5)
+        data = resp.json()
+        if data:
+            return (float(data[0]["lat"]), float(data[0]["lon"]))
     except:
-        return text
+        pass
+
+    # Fallback: Visakhapatnam city center
+    return (17.7231, 83.3012)
 
 def call_ai(prompt):
     try:
@@ -364,13 +501,10 @@ def call_ai(prompt):
             json={"model": "llama-3.3-70b-versatile", "messages": [{"role": "user", "content": prompt}], "max_tokens": 500}
         )
         data = response.json()
-        if "choices" in data:
-            return data["choices"][0]["message"]["content"]
-        elif "error" in data:
-            return f"API Error: {data['error']['message']}"
+        if "choices" in data: return data["choices"][0]["message"]["content"]
+        elif "error" in data: return f"API Error: {data['error']['message']}"
         return f"Unexpected response: {str(data)}"
-    except Exception as e:
-        return f"Error: {str(e)}"
+    except Exception as e: return f"Error: {str(e)}"
 
 def analyze_complaint(description, category):
     try:
@@ -384,11 +518,9 @@ def analyze_complaint(description, category):
         result_text = call_ai(prompt)
         if "```" in result_text:
             result_text = result_text.split("```")[1]
-            if result_text.startswith("json"):
-                result_text = result_text[4:]
+            if result_text.startswith("json"): result_text = result_text[4:]
         return json.loads(result_text.strip())
-    except:
-        return {"priority": "Medium", "summary": "Complaint received and logged", "department": "General Administration", "is_fake": False, "fake_reason": ""}
+    except: return {"priority": "Medium", "summary": "Complaint received and logged", "department": "General Administration", "is_fake": False, "fake_reason": ""}
 
 def generate_prediction(complaints):
     try:
@@ -401,8 +533,7 @@ def generate_prediction(complaints):
         result_text = call_ai(prompt)
         if "```" in result_text:
             result_text = result_text.split("```")[1]
-            if result_text.startswith("json"):
-                result_text = result_text[4:]
+            if result_text.startswith("json"): result_text = result_text[4:]
         return json.loads(result_text.strip())
     except:
         return [
@@ -425,34 +556,29 @@ def ask_copilot(question):
         Answer ANY question. Be friendly and concise.
         User Question: {question}"""
         return call_ai(prompt)
-    except Exception as e:
-        return f"Error: {str(e)}"
+    except Exception as e: return f"Error: {str(e)}"
 
-# ============================================
-# GET CURRENT LANGUAGE
-# ============================================
 def get_lang():
-    if st.session_state.admin_logged_in:
-        return TRANSLATIONS[st.session_state.admin_lang]
+    if st.session_state.admin_logged_in: return TRANSLATIONS[st.session_state.admin_lang]
     return TRANSLATIONS[st.session_state.citizen_lang]
 
 # ============================================
-# HEADER — rendered only once using placeholder
+# HEADER
 # ============================================
-header_placeholder = st.empty()
 SL = get_lang()
-tags_html = "".join([f'<span style="background:rgba(255,255,255,0.15);color:white;padding:4px 10px;border-radius:20px;font-size:0.7rem;font-weight:600;">{t}</span>' for t in SL["header_tags"]])
-header_placeholder.markdown(f"""
+tags_html = "".join([f'<span style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);padding:5px 14px;border-radius:50px;font-size:0.71rem;font-weight:600;letter-spacing:0.5px;border:1px solid rgba(255,255,255,0.12);">{t}</span>' for t in SL["header_tags"]])
+st.markdown(f"""
 <div class="app-header">
-    <div style="display:flex;align-items:center;justify-content:center;gap:12px;">
-        <div style="background:rgba(255,255,255,0.2);width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">🏛️</div>
-        <div style="text-align:left;">
-            <h1 style="color:white;margin:0;font-size:1.5rem;font-weight:800;">Public Pulse</h1>
-            <p style="color:rgba(255,255,255,0.8);margin:0;font-size:0.72rem;">{SL["header_sub"]}</p>
+    <div style="position:relative;z-index:1;text-align:center;">
+        <div style="display:inline-flex;align-items:center;gap:14px;margin-bottom:8px;">
+            <div style="background:rgba(0,200,150,0.15);border:1px solid rgba(0,200,150,0.3);width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">🏛️</div>
+            <div style="text-align:left;">
+                <div style="color:white;margin:0;font-size:1.7rem;font-weight:800;letter-spacing:-0.5px;">Public Pulse</div>
+                <div style="color:rgba(255,255,255,0.45);margin:0;font-size:0.68rem;letter-spacing:1.2px;text-transform:uppercase;font-weight:500;">{SL["header_sub"]}</div>
+            </div>
         </div>
-    </div>
-    <div style="display:flex;justify-content:center;gap:8px;margin-top:12px;flex-wrap:wrap;">
-        {tags_html}
+        <div style="width:60px;height:2px;background:linear-gradient(90deg,rgba(0,200,150,0.6),rgba(14,165,233,0.6));margin:12px auto;border-radius:2px;"></div>
+        <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">{tags_html}</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -466,14 +592,11 @@ with col_btn:
         st.session_state.copilot_open = not st.session_state.copilot_open
 
 if st.session_state.copilot_open:
-    st.markdown("""
-    <div style="background:white;border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,0.2);margin-bottom:20px;overflow:hidden;">
+    st.markdown("""<div style="background:white;border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,0.2);margin-bottom:20px;overflow:hidden;">
         <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:15px 20px;">
             <span style="color:white;font-weight:700;font-size:1rem;">🤖 Public Pulse Copilot</span><br>
             <span style="color:rgba(255,255,255,0.8);font-size:0.8rem;">Ask me anything!</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        </div></div>""", unsafe_allow_html=True)
     for chat in st.session_state.chat_history[-4:]:
         if 'user' in chat:
             st.markdown(f"**🧑 You:** {chat['user']}")
@@ -498,37 +621,31 @@ with st.sidebar:
     high_s = len([c for c in complaints_all if c['priority'] == 'High'])
     resolved_s = len([c for c in complaints_all if c['status'] == 'Resolved'])
     fake_s = len([c for c in complaints_all if c.get('is_fake', False)])
-
-    # Get language for sidebar
     SL = get_lang()
 
     if st.session_state.admin_logged_in:
-        st.markdown(f"""
-        <div class="sidebar-stats">
-            <h3 style="margin:0;color:white;">{SL["sidebar_live"]}</h3>
-            <hr style="border-color:rgba(255,255,255,0.3);">
-            <p style="margin:5px 0;color:white;">📋 Total: <strong>{total_s}</strong></p>
-            <p style="margin:5px 0;color:white;">🔴 High: <strong>{high_s}</strong></p>
-            <p style="margin:5px 0;color:white;">✅ Resolved: <strong>{resolved_s}</strong></p>
-            <p style="margin:5px 0;color:white;">🚫 Fake: <strong>{fake_s}</strong></p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div class="sidebar-stats">
+            <h3>{SL["sidebar_live"]}</h3>
+            <hr style="border-color:rgba(37,99,235,0.2);">
+            <p>📋 Total: <strong>{total_s}</strong></p>
+            <p>🔴 High: <strong>{high_s}</strong></p>
+            <p>✅ Resolved: <strong>{resolved_s}</strong></p>
+            <p>🚫 Fake: <strong>{fake_s}</strong></p>
+        </div>""", unsafe_allow_html=True)
     else:
-        st.markdown(f"""
-        <div class="sidebar-stats">
-            <h3 style="margin:0;color:white;">{SL["sidebar_title"]}</h3>
-            <hr style="border-color:rgba(255,255,255,0.3);">
-            <p style="margin:5px 0;color:white;opacity:0.9;">{SL["sidebar_sub"]}</p>
-            <p style="margin:5px 0;color:white;opacity:0.9;">{SL["sidebar_available"]}</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div class="sidebar-stats">
+            <h3>{SL["sidebar_title"]}</h3>
+            <hr style="border-color:rgba(37,99,235,0.2);">
+            <p>{SL["sidebar_sub"]}</p>
+            <p>{SL["sidebar_available"]}</p>
+        </div>""", unsafe_allow_html=True)
 
-    # NAVIGATION based on login status and language
+    # ============================================
+    # CHANGE 1: Admin nav WITHOUT QR Code and Track Complaint
+    # ============================================
     if st.session_state.admin_logged_in:
         nav_options = [
-            SL["nav_track"],
             SL["nav_ai"],
-            SL["nav_qr"],
             SL["nav_satellite"],
             SL["nav_heatmap"],
             SL["nav_predict"],
@@ -547,7 +664,6 @@ with st.sidebar:
         ]
 
     page = st.radio(SL["navigation"], nav_options)
-
     st.markdown("---")
     st.markdown(f"**{SL['about_title']}**")
     st.markdown(SL["about_desc"])
@@ -560,7 +676,7 @@ with st.sidebar:
         st.markdown("QR Code loading...")
 
 # ============================================
-# PAGE ROUTING - uses nav key values
+# PAGE ROUTING
 # ============================================
 def is_page(page, key):
     return page == TRANSLATIONS["English"][key] or page == TRANSLATIONS["Telugu"][key] or page == TRANSLATIONS["Hindi"][key]
@@ -589,7 +705,6 @@ if is_page(page, "nav_submit"):
         with c2:
             location = st.text_input(T["location"])
             ward = st.text_input(T["ward"])
-
         category = st.selectbox(T["category"], T["categories"])
         description = st.text_area(T["describe"], placeholder=T["describe_placeholder"], height=150)
         uploaded_image = st.file_uploader(T["upload_photo"], type=["jpg","jpeg","png"])
@@ -607,13 +722,11 @@ if is_page(page, "nav_submit"):
                     ai_result = analyze_complaint(english_description, category)
 
                 if ai_result.get("is_fake", False):
-                    st.markdown(f"""
-                    <div class="fake-card">
+                    st.markdown(f"""<div class="fake-card">
                         <h2>🚫 Complaint Rejected</h2>
                         <p>Our AI has flagged this complaint as potentially fake or invalid.</p>
                         <p><strong>Reason:</strong> {ai_result.get("fake_reason","Description does not match a real civic complaint")}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    </div>""", unsafe_allow_html=True)
                 else:
                     complaint_id = f"PP-2024-{str(st.session_state.complaint_counter).zfill(3)}"
                     st.session_state.complaint_counter += 1
@@ -630,12 +743,24 @@ if is_page(page, "nav_submit"):
                         "department": ai_result.get("department","General Administration"),
                         "status": "Pending",
                         "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                        "image": image_data, "lat": 17.7231, "lon": 83.3012,
+                        "image": image_data, "lat": geocode_location(location)[0], "lon": geocode_location(location)[1],
                         "is_fake": False, "fake_reason": ""
                     }
                     st.session_state.complaints.append(complaint)
-
                     deadline_msg = "24 hours" if ai_result["priority"]=="High" else "48 hours" if ai_result["priority"]=="Medium" else "72 hours"
+
+                    # ============================================
+                    # CHANGE 2: REAL WhatsApp notification via Twilio
+                    # ============================================
+                    with st.spinner("📱 Sending WhatsApp notification..."):
+                        wa_sent, wa_result = send_whatsapp_notification(
+                            phone, name, complaint_id,
+                            ai_result["priority"],
+                            ai_result.get("department","General Admin"),
+                            deadline_msg
+                        )
+
+                    # Show WhatsApp UI preview
                     st.markdown(f"""
                     <div class="whatsapp-container">
                         <div class="whatsapp-header">
@@ -654,15 +779,20 @@ if is_page(page, "nav_submit"):
                                 <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">⚡ Priority: <strong>{ai_result["priority"]}</strong></p>
                                 <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">🏢 {ai_result.get("department","General Admin")}</p>
                                 <p style="margin:4px 0;color:#1e293b;font-size:0.85rem;">⏰ Resolution: <strong>{deadline_msg}</strong></p>
-                                <div class="whatsapp-tick">✓✓ Delivered</div>
+                                <div class="whatsapp-tick">{'✓✓ Sent to +91' + str(phone)[-4:].rjust(10,'*') if wa_sent else '✓ Preview Only'}</div>
                             </div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
 
+                    # Show real delivery status
+                    if wa_sent:
+                        st.success(f"📱 WhatsApp notification sent to +91{str(phone)[-4:].rjust(10,'*')}! ✅")
+                    else:
+                        st.info(f"📱 WhatsApp preview shown. To enable real delivery, add Twilio credentials to Streamlit secrets.")
+
                     p_icon = "🔴" if ai_result["priority"]=="High" else "🟡" if ai_result["priority"]=="Medium" else "🟢"
-                    st.markdown(f"""
-                    <div class="success-card">
+                    st.markdown(f"""<div class="success-card">
                         <h2>✅ Complaint Submitted Successfully!</h2>
                         <h1 style="color:#065f46;font-size:2rem;">{complaint_id}</h1>
                         <p>Save this ID to track your complaint</p><hr>
@@ -670,8 +800,7 @@ if is_page(page, "nav_submit"):
                         <p><strong>📋 Summary:</strong> {ai_result["summary"]}</p>
                         <p><strong>🏢 Routed To:</strong> {ai_result.get("department","General Administration")}</p>
                         <p><strong>⏱️ Expected Resolution:</strong> Within {deadline_msg}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    </div>""", unsafe_allow_html=True)
 
 # ============================================
 # PAGE 2 - TRACK COMPLAINT
@@ -696,8 +825,7 @@ elif is_page(page, "nav_track"):
                 time_remaining, is_overdue = get_time_remaining(found['date'], priority)
                 timer_color = "#dc2626" if is_overdue else "#059669"
 
-                st.markdown(f"""
-                <div style="background:white;padding:25px;border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,0.08);margin-top:20px;">
+                st.markdown(f"""<div style="background:white;padding:25px;border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,0.08);margin-top:20px;">
                     <h2 style="text-align:center;color:#1e3a8a;">{TL["track_found"]}</h2>
                     <hr style="border-color:#e2e8f0;">
                     <div style="background:#f8fafc;padding:16px;border-radius:12px;margin-bottom:16px;border-left:4px solid {status_color};">
@@ -717,13 +845,9 @@ elif is_page(page, "nav_track"):
                         <tr style="background:#f8fafc;"><td style="padding:10px;color:#64748b;font-weight:600;">⏱️ Time Left</td><td style="padding:10px;font-weight:700;color:{timer_color};">{time_remaining}</td></tr>
                     </table>
                     <p style="color:#64748b;font-size:0.85rem;margin:12px 0 4px;font-weight:600;">Progress: {progress}%</p>
-                </div>
-                """, unsafe_allow_html=True)
-
+                </div>""", unsafe_allow_html=True)
                 st.progress(progress)
-
-                st.markdown(f"""
-                <div style="background:white;padding:20px;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,0.06);margin-top:16px;">
+                st.markdown(f"""<div style="background:white;padding:20px;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,0.06);margin-top:16px;">
                     <p style="color:#1e293b;font-weight:700;margin-bottom:12px;">📍 Status Timeline</p>
                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                         <div style="width:28px;height:28px;border-radius:50%;background:{'#059669' if progress>=10 else '#e2e8f0'};display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;font-weight:700;">✓</div>
@@ -739,9 +863,7 @@ elif is_page(page, "nav_track"):
                         <div style="width:28px;height:28px;border-radius:50%;background:{'#059669' if progress==100 else '#e2e8f0'};display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;font-weight:700;">{'✓' if progress==100 else '○'}</div>
                         <div><p style="margin:0;color:{'#1e293b' if progress==100 else '#94a3b8'};font-weight:600;font-size:0.9rem;">Resolved</p><p style="margin:0;color:#64748b;font-size:0.75rem;">Issue fixed successfully</p></div>
                     </div>
-                </div>
-                """, unsafe_allow_html=True)
-
+                </div>""", unsafe_allow_html=True)
                 if found.get('image'):
                     st.image(base64.b64decode(found['image']), width=400, caption="Submitted Photo")
             else:
@@ -754,27 +876,71 @@ elif is_page(page, "nav_track"):
 elif is_page(page, "nav_satellite"):
     st.markdown('<p class="section-header">🛰️ Live Satellite Map — Visakhapatnam</p>', unsafe_allow_html=True)
     m = folium.Map(location=[17.7231, 83.3012], zoom_start=13,
-        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        attr="Esri Satellite")
-    folium.TileLayer(
-        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attr="Esri Satellite")
+    folium.TileLayer(tiles="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
         attr="Esri Labels", name="Labels", overlay=True).add_to(m)
     for c in st.session_state.complaints:
         if c.get('is_fake', False): continue
-        lat = c.get('lat', 17.7231)
-        lon = c.get('lon', 83.3012)
+        lat, lon = c.get('lat', 17.7231), c.get('lon', 83.3012)
         color = get_marker_color(c['priority'])
-        time_rem, overdue = get_time_remaining(c['date'], c['priority'])
-        popup_html = f"""<div style="font-family:Arial;min-width:220px;padding:5px;">
-            <h4 style="color:#1e3a8a;margin:0;">{c['id']}</h4>
-            <p><b>👤</b> {c['name']}</p><p><b>📂</b> {c['category']}</p>
-            <p><b>📍</b> {c['location']}</p><p><b>Priority:</b> {c['priority']}</p>
-            <p><b>Status:</b> {c['status']}</p></div>"""
-        folium.Marker(location=[lat, lon], popup=folium.Popup(popup_html, max_width=260),
-            tooltip=f"📍 {c['id']} — {c['category']}",
+        p_color = "#dc2626" if c['priority']=="High" else "#d97706" if c['priority']=="Medium" else "#16a34a"
+
+        # Build image HTML for popup if photo exists
+        img_html = ""
+        if c.get('image'):
+            img_html = f'<img src="data:image/jpeg;base64,{c["image"]}" style="width:100%;border-radius:8px;margin-top:8px;max-height:140px;object-fit:cover;" />'
+
+        popup_html = f"""
+        <div style="font-family:Arial;min-width:250px;max-width:280px;padding:8px;">
+            <div style="background:#1e3a8a;color:white;padding:8px 12px;border-radius:8px;margin-bottom:8px;">
+                <b style="font-size:1rem;">{c['id']}</b>
+                <span style="float:right;background:{p_color};padding:2px 8px;border-radius:10px;font-size:0.7rem;">{c['priority']}</span>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+                <tr><td style="color:#64748b;padding:3px 0;font-weight:600;">👤 Name</td><td style="padding:3px 0;">{c['name']}</td></tr>
+                <tr><td style="color:#64748b;padding:3px 0;font-weight:600;">📱 Phone</td><td style="padding:3px 0;">{c['phone']}</td></tr>
+                <tr><td style="color:#64748b;padding:3px 0;font-weight:600;">📍 Location</td><td style="padding:3px 0;">{c['location']}</td></tr>
+                <tr><td style="color:#64748b;padding:3px 0;font-weight:600;">📂 Category</td><td style="padding:3px 0;">{c['category']}</td></tr>
+                <tr><td style="color:#64748b;padding:3px 0;font-weight:600;">🏢 Dept</td><td style="padding:3px 0;">{c['department']}</td></tr>
+                <tr><td style="color:#64748b;padding:3px 0;font-weight:600;">📋 Summary</td><td style="padding:3px 0;">{c['summary'][:60]}...</td></tr>
+                <tr><td style="color:#64748b;padding:3px 0;font-weight:600;">📅 Date</td><td style="padding:3px 0;">{c['date']}</td></tr>
+                <tr><td style="color:#64748b;padding:3px 0;font-weight:600;">✅ Status</td><td style="padding:3px 0;font-weight:700;color:#2563eb;">{c['status']}</td></tr>
+            </table>
+            {img_html}
+        </div>"""
+        folium.Marker(location=[lat, lon], popup=folium.Popup(popup_html, max_width=300),
+            tooltip=f"📍 {c['id']} — {c['category']} ({c['priority']})",
             icon=folium.Icon(color=color, icon="info-sign", prefix="glyphicon")).add_to(m)
     folium.LayerControl().add_to(m)
     st_folium(m, width=None, height=550)
+
+    # Complaint cards below map with photos
+    st.markdown("---")
+    st.markdown('<p class="section-header">📋 All Complaints on Map</p>', unsafe_allow_html=True)
+    real = [c for c in st.session_state.complaints if not c.get('is_fake', False)]
+    for c in real:
+        p_color = "#dc2626" if c['priority']=="High" else "#d97706" if c['priority']=="Medium" else "#16a34a"
+        col_info, col_img = st.columns([2, 1])
+        with col_info:
+            st.markdown(f"""<div class="complaint-card" style="border-left-color:{p_color};">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <strong style="color:#1e3a8a;font-size:1rem;">{c['id']}</strong>
+                    <span style="background:{p_color}20;color:{p_color};padding:3px 10px;border-radius:20px;font-weight:700;font-size:0.75rem;">{c['priority']}</span>
+                </div>
+                <p style="margin:3px 0;"><b>👤</b> {c['name']} &nbsp;|&nbsp; <b>📱</b> {c['phone']}</p>
+                <p style="margin:3px 0;"><b>📍</b> {c['location']}</p>
+                <p style="margin:3px 0;"><b>📂</b> {c['category']} &nbsp;|&nbsp; <b>✅</b> {c['status']}</p>
+                <p style="margin:3px 0;color:#64748b;font-size:0.82rem;">{c['summary']}</p>
+                <p style="margin:3px 0;color:#64748b;font-size:0.75rem;">📅 {c['date']} &nbsp;|&nbsp; 🗺️ {c['lat']:.4f}, {c['lon']:.4f}</p>
+            </div>""", unsafe_allow_html=True)
+        with col_img:
+            if c.get('image'):
+                st.image(base64.b64decode(c['image']), caption=f"📸 {c['id']}", use_container_width=True)
+            else:
+                st.markdown(f"""<div style="background:#f8fafc;border:2px dashed #e2e8f0;border-radius:12px;padding:20px;text-align:center;height:100%;">
+                    <p style="font-size:2rem;margin:0;">📷</p>
+                    <p style="color:#94a3b8;font-size:0.75rem;margin:4px 0;">No photo</p>
+                </div>""", unsafe_allow_html=True)
 
 # ============================================
 # PAGE 4 - HEATMAP
@@ -799,6 +965,35 @@ elif is_page(page, "nav_heatmap"):
         fig.update_layout(height=300, coloraxis_showscale=False)
         st.plotly_chart(fig, use_container_width=True)
 
+    # Complaint details with photos below heatmap
+    st.markdown("---")
+    st.markdown('<p class="section-header">📋 Complaint Details & Photos</p>', unsafe_allow_html=True)
+    real = [c for c in st.session_state.complaints if not c.get('is_fake', False)]
+    # Group by priority for heatmap view
+    for pri, pri_color in [("High","#dc2626"), ("Medium","#d97706"), ("Low","#16a34a")]:
+        group = [c for c in real if c['priority'] == pri]
+        if group:
+            st.markdown(f"**{'🔴' if pri=='High' else '🟡' if pri=='Medium' else '🟢'} {pri} Priority — {len(group)} complaints**")
+            for c in group:
+                col_info, col_img = st.columns([2, 1])
+                with col_info:
+                    st.markdown(f"""<div class="complaint-card" style="border-left-color:{pri_color};">
+                        <strong style="color:#1e3a8a;">{c['id']}</strong> &nbsp;
+                        <span style="background:{pri_color}20;color:{pri_color};padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:700;">{c['priority']}</span>
+                        <p style="margin:5px 0;"><b>👤</b> {c['name']} &nbsp;|&nbsp; <b>📍</b> {c['location']}</p>
+                        <p style="margin:3px 0;"><b>📂</b> {c['category']} &nbsp;|&nbsp; <b>✅</b> {c['status']}</p>
+                        <p style="margin:3px 0;color:#64748b;font-size:0.82rem;">{c['summary']}</p>
+                        <p style="margin:3px 0;color:#94a3b8;font-size:0.72rem;">🗺️ {c['lat']:.4f}, {c['lon']:.4f} &nbsp;|&nbsp; 📅 {c['date']}</p>
+                    </div>""", unsafe_allow_html=True)
+                with col_img:
+                    if c.get('image'):
+                        st.image(base64.b64decode(c['image']), caption=f"📸 {c['id']}", use_container_width=True)
+                    else:
+                        st.markdown(f"""<div style="background:#f8fafc;border:2px dashed #e2e8f0;border-radius:12px;padding:20px;text-align:center;">
+                            <p style="font-size:2rem;margin:0;">📷</p>
+                            <p style="color:#94a3b8;font-size:0.75rem;margin:4px 0;">No photo</p>
+                        </div>""", unsafe_allow_html=True)
+
 # ============================================
 # PAGE 5 - AI ASSISTANT
 # ============================================
@@ -809,7 +1004,6 @@ elif is_page(page, "nav_ai"):
             st.markdown(f'<div style="background:#1e3a8a;color:white;padding:15px;border-radius:15px 15px 5px 15px;margin:10px 0;max-width:80%;margin-left:auto;text-align:right;">👤 {msg["content"]}</div>', unsafe_allow_html=True)
         else:
             st.markdown(f'<div style="background:white;color:#1e293b;padding:15px;border-radius:15px 15px 15px 5px;margin:10px 0;max-width:80%;box-shadow:0 2px 10px rgba(0,0,0,0.1);">🤖 {msg["content"]}</div>', unsafe_allow_html=True)
-
     with st.form("chat_form", clear_on_submit=True):
         col1, col2 = st.columns([5,1])
         with col1:
@@ -825,7 +1019,6 @@ elif is_page(page, "nav_ai"):
                 bot_reply = call_ai(f"{context}\n\nUser: {user_input}")
             st.session_state.chat_history.append({"role":"assistant","content":bot_reply})
             st.rerun()
-
     st.markdown("**Quick Questions:**")
     q1,q2,q3 = st.columns(3)
     with q1:
@@ -853,7 +1046,6 @@ elif is_page(page, "nav_predict"):
         <h3 style="margin:0;">🧠 How Predictive AI Works</h3>
         <p style="margin-top:10px;opacity:0.9;">Our AI analyzes complaint patterns to predict which areas are likely to face civic problems in the coming week!</p>
     </div>""", unsafe_allow_html=True)
-
     if st.button("🔮 Generate AI Predictions Now", use_container_width=True):
         with st.spinner("🧠 AI is analyzing complaint patterns..."):
             predictions = generate_prediction(st.session_state.complaints)
@@ -872,7 +1064,6 @@ elif is_page(page, "nav_predict"):
                 <p style="color:#1e293b;"><b>🧠 AI Reasoning:</b> {pred.get('reason','')}</p>
             </div>""", unsafe_allow_html=True)
         st.success("✅ Predictions generated!")
-
     df = pd.DataFrame([c for c in st.session_state.complaints if not c.get('is_fake',False)])
     if len(df) > 0:
         col1, col2 = st.columns(2)
@@ -948,8 +1139,7 @@ elif is_page(page, "nav_dashboard"):
         with f4: filter_fake = st.selectbox("Authenticity", ["Real Only","All","Fake Only"])
 
         filtered = complaints.copy()
-        if search:
-            filtered = [c for c in filtered if search.lower() in c['name'].lower() or search.lower() in c['location'].lower() or search.lower() in c['id'].lower()]
+        if search: filtered = [c for c in filtered if search.lower() in c['name'].lower() or search.lower() in c['location'].lower() or search.lower() in c['id'].lower()]
         if filter_priority != "All": filtered = [c for c in filtered if c['priority']==filter_priority]
         if filter_status != "All": filtered = [c for c in filtered if c['status']==filter_status]
         if filter_category != "All": filtered = [c for c in filtered if c['category']==filter_category]
@@ -961,8 +1151,7 @@ elif is_page(page, "nav_dashboard"):
         with col_export:
             if filtered:
                 df_export = pd.DataFrame(filtered).drop(columns=['image','lat','lon'], errors='ignore')
-                st.download_button("📥 Export CSV", data=df_export.to_csv(index=False),
-                    file_name="complaints.csv", mime="text/csv", use_container_width=True)
+                st.download_button("📥 Export CSV", data=df_export.to_csv(index=False), file_name="complaints.csv", mime="text/csv", use_container_width=True)
 
         st.markdown("---")
         for complaint in filtered:
@@ -975,8 +1164,7 @@ elif is_page(page, "nav_dashboard"):
             border_color = "#be185d" if is_fake else "#dc2626" if priority=="High" else "#d97706" if priority=="Medium" else "#059669"
             timer_color = "#dc2626" if overdue else "#059669"
 
-            st.markdown(f"""
-            <div class="complaint-card" style="border-left-color:{border_color};">
+            st.markdown(f"""<div class="complaint-card" style="border-left-color:{border_color};">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                     <div><strong style="color:#1e3a8a;">{complaint['id']}</strong>&nbsp;{p_badge}&nbsp;{fake_badge}</div>
                     <div style="color:#64748b;font-size:0.85rem;">📅 {complaint['date']}</div>
@@ -991,8 +1179,7 @@ elif is_page(page, "nav_dashboard"):
                     <span style="color:#2563eb;font-size:0.85rem;">🏢 {complaint['department']}</span>
                 </div>
                 <div style="color:#1e293b;font-size:0.9rem;">{complaint['description']}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            </div>""", unsafe_allow_html=True)
 
             if complaint.get('image'):
                 st.image(base64.b64decode(complaint['image']), width=300, caption="Complaint Photo")
@@ -1009,8 +1196,7 @@ elif is_page(page, "nav_dashboard"):
                     st.success(f"✅ Status updated to {new_status}!")
                     status_emoji = "🔄" if new_status=="In Progress" else "✅" if new_status=="Resolved" else "⏳"
                     status_msg = "is being actively worked on!" if new_status=="In Progress" else "has been RESOLVED! 🎉" if new_status=="Resolved" else "is pending assignment."
-                    st.markdown(f"""
-                    <div class="whatsapp-container">
+                    st.markdown(f"""<div class="whatsapp-container">
                         <div class="whatsapp-header">
                             <div style="background:#25d366;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🏛️</div>
                             <div><div style="color:#ffffff;font-weight:700;font-size:0.9rem;">Public Pulse Official</div><div style="color:#25d366;font-size:0.75rem;">● Online</div></div>
@@ -1024,8 +1210,7 @@ elif is_page(page, "nav_dashboard"):
                                 <div class="whatsapp-tick">✓✓ Delivered</div>
                             </div>
                         </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    </div>""", unsafe_allow_html=True)
                     st.rerun()
             st.markdown("---")
 
@@ -1048,14 +1233,11 @@ elif is_page(page, "nav_feedback"):
                 if not complaint_id:
                     st.error("Please enter your Complaint ID!")
                 else:
-                    st.markdown(f"""
-                    <div style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);padding:25px;border-radius:16px;border:1px solid #10b981;text-align:center;">
+                    st.markdown(f"""<div style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);padding:25px;border-radius:16px;border:1px solid #10b981;text-align:center;">
                         <h2 style="color:#065f46;">{TF["feedback_thanks"]}</h2>
                         <p style="color:#1e293b;"><strong>ID:</strong> {complaint_id} | <strong>Rating:</strong> {rating}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    st.markdown(f"""
-                    <div class="whatsapp-container" style="margin-top:16px;">
+                    </div>""", unsafe_allow_html=True)
+                    st.markdown(f"""<div class="whatsapp-container" style="margin-top:16px;">
                         <div class="whatsapp-header">
                             <div style="background:#25d366;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🏛️</div>
                             <div><div style="color:#ffffff;font-weight:700;font-size:0.9rem;">Public Pulse Official</div><div style="color:#25d366;font-size:0.75rem;">● Online</div></div>
@@ -1068,8 +1250,7 @@ elif is_page(page, "nav_feedback"):
                                 <div class="whatsapp-tick">✓✓ Delivered</div>
                             </div>
                         </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    </div>""", unsafe_allow_html=True)
 
 # ============================================
 # PAGE - QR CODE
@@ -1087,8 +1268,7 @@ elif is_page(page, "nav_qr"):
                 <p style="color:#1e3a8a;font-weight:700;">QR Code</p>
                 <p style="color:#64748b;">publicpulse.streamlit.app</p>
             </div>""", unsafe_allow_html=True)
-        st.markdown("""
-        <div style="background:white;padding:20px;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,0.06);margin-top:16px;">
+        st.markdown("""<div style="background:white;padding:20px;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,0.06);margin-top:16px;">
             <h3 style="color:#1e3a8a;text-align:center;">📲 How to Install</h3>
             <div style="background:#f8fafc;padding:12px;border-radius:10px;margin:8px 0;">
                 <p style="margin:4px 0;color:#1e293b;"><strong>Android:</strong></p>
@@ -1102,8 +1282,7 @@ elif is_page(page, "nav_qr"):
         <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:16px;border-radius:14px;text-align:center;margin-top:16px;">
             <p style="color:white;font-weight:700;margin:0;">🌐 Live URL</p>
             <p style="color:#93c5fd;margin:4px 0;font-size:0.9rem;">publicpulse.streamlit.app</p>
-        </div>
-        """, unsafe_allow_html=True)
+        </div>""", unsafe_allow_html=True)
 
 # ============================================
 # PAGE - LEADERBOARD
@@ -1122,7 +1301,6 @@ elif is_page(page, "nav_leaderboard"):
         if c['status'] == 'Pending': dept_stats[dept]['pending'] += 1
         if c['status'] == 'In Progress': dept_stats[dept]['in_progress'] += 1
         if c['priority'] == 'High': dept_stats[dept]['high'] += 1
-
     leaderboard = []
     for dept, stats in dept_stats.items():
         rate = int((stats['resolved']/stats['total'])*100) if stats['total'] > 0 else 0
@@ -1130,19 +1308,16 @@ elif is_page(page, "nav_leaderboard"):
         leaderboard.append({'department':dept,'total':stats['total'],'resolved':stats['resolved'],
             'pending':stats['pending'],'in_progress':stats['in_progress'],'high':stats['high'],'rate':rate,'score':score})
     leaderboard.sort(key=lambda x: x['score'], reverse=True)
-
     medals = ["🥇","🥈","🥉"]
     podium_colors = ["#f59e0b","#6366f1","#10b981"]
     podium_shadows = ["rgba(245,158,11,0.3)","rgba(99,102,241,0.3)","rgba(16,185,129,0.3)"]
-
     if len(leaderboard) >= 3:
         col1, col2, col3 = st.columns(3)
         for i, (col, rank) in enumerate(zip([col1,col2,col3],[1,0,2])):
             if rank < len(leaderboard):
                 d = leaderboard[rank]
                 with col:
-                    st.markdown(f"""
-                    <div style="background:linear-gradient(135deg,{podium_colors[rank]}20,{podium_colors[rank]}10);
+                    st.markdown(f"""<div style="background:linear-gradient(135deg,{podium_colors[rank]}20,{podium_colors[rank]}10);
                                 border:2px solid {podium_colors[rank]}60;border-radius:20px;padding:25px;text-align:center;
                                 box-shadow:0 8px 25px {podium_shadows[rank]};margin-bottom:15px;">
                         <div style="font-size:3rem;">{medals[rank]}</div>
@@ -1151,7 +1326,6 @@ elif is_page(page, "nav_leaderboard"):
                         <div style="color:#64748b;font-size:0.75rem;">Resolution Rate</div>
                         <div style="margin-top:10px;font-size:0.8rem;color:#64748b;">✅ {d['resolved']} resolved | 📋 {d['total']} total</div>
                     </div>""", unsafe_allow_html=True)
-
     st.markdown("---")
     for i, dept in enumerate(leaderboard):
         medal = medals[i] if i < 3 else f"#{i+1}"
@@ -1159,8 +1333,7 @@ elif is_page(page, "nav_leaderboard"):
         bar_color = "#16a34a" if rate >= 70 else "#f59e0b" if rate >= 40 else "#ef4444"
         rate_color = "#16a34a" if rate >= 70 else "#d97706" if rate >= 40 else "#dc2626"
         grade = "⭐ Excellent" if rate >= 70 else "👍 Good" if rate >= 40 else "⚠️ Needs Work"
-        st.markdown(f"""
-        <div class="rank-card">
+        st.markdown(f"""<div class="rank-card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                 <div style="display:flex;align-items:center;gap:12px;">
                     <span style="font-size:2rem;">{medal}</span>
@@ -1191,7 +1364,6 @@ elif is_page(page, "nav_admin"):
     if admin_lang != st.session_state.admin_lang:
         st.session_state.admin_lang = admin_lang
         st.rerun()
-
     TA = TRANSLATIONS[admin_lang]
     st.markdown(f'<p class="section-header">{TA["admin_title"]}</p>', unsafe_allow_html=True)
     col1,col2,col3 = st.columns([1,2,1])
@@ -1202,8 +1374,7 @@ elif is_page(page, "nav_admin"):
                 st.session_state.admin_logged_in = False
                 st.rerun()
         else:
-            st.markdown(f"""
-            <div style="background:white;padding:40px;border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,0.1);">
+            st.markdown(f"""<div style="background:white;padding:40px;border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,0.1);">
                 <h3 style="text-align:center;color:#1e3a8a;">{TA["admin_portal"]}</h3>
                 <p style="text-align:center;color:#64748b;">{TA["admin_subtitle"]}</p>
             </div>""", unsafe_allow_html=True)

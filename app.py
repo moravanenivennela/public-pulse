@@ -432,57 +432,188 @@ def translate_to_english(text, source_lang):
         return GoogleTranslator(source='auto', target='en').translate(text)
     except: return text
 
-# Known Visakhapatnam areas → real GPS coordinates
-VIZAG_LOCATIONS = {
-    "maddilapalem": (17.7384, 83.2184),
-    "mvp colony": (17.7230, 83.3012),
-    "gajuwaka": (17.6868, 83.2185),
-    "dwaraka nagar": (17.7340, 83.3200),
-    "dwarka nagar": (17.7340, 83.3200),
-    "rushikonda": (17.7828, 83.3677),
-    "seethammadhara": (17.7323, 83.3120),
-    "waltair": (17.7251, 83.3296),
-    "port area": (17.6868, 83.2774),
-    "vizag": (17.6868, 83.2185),
-    "visakhapatnam": (17.6868, 83.2185),
-    "steel plant": (17.6560, 83.1790),
-    "pendurthi": (17.8453, 83.1819),
-    "kommadi": (17.7972, 83.3724),
-    "bheemunipatnam": (17.8940, 83.4558),
-    "bhimili": (17.8940, 83.4558),
-    "anakapalle": (17.6910, 82.9980),
-    "gopalapatnam": (17.7600, 83.2200),
-    "kurmannapalem": (17.7100, 83.2700),
-    "akkayyapalem": (17.7415, 83.3198),
-    "lawsons bay": (17.7550, 83.3750),
-    "beach road": (17.7200, 83.3400),
-    "rk beach": (17.7139, 83.3412),
-    "ram nagar": (17.7200, 83.3100),
-    "narava": (17.8100, 83.2100),
-    "marripalem": (17.7540, 83.3215),
-    "jagadamba": (17.7200, 83.3050),
-    "dabagardens": (17.7280, 83.3150),
-    "daba gardens": (17.7280, 83.3150),
-    "siripuram": (17.7350, 83.3220),
-    "isakathota": (17.7480, 83.2900),
-    "yendada": (17.7750, 83.3600),
-    "tadichetlapalem": (17.7650, 83.3500),
+# ============================================
+# FULL ANDHRA PRADESH locations → GPS coordinates
+# Covers all 26 districts + major towns/areas
+# ============================================
+AP_LOCATIONS = {
+    # ── VISAKHAPATNAM DISTRICT ──
+    "visakhapatnam": (17.6868, 83.2185), "vizag": (17.6868, 83.2185),
+    "maddilapalem": (17.7384, 83.2184), "mvp colony": (17.7230, 83.3012),
+    "gajuwaka": (17.6868, 83.2185), "dwaraka nagar": (17.7340, 83.3200),
+    "dwarka nagar": (17.7340, 83.3200), "rushikonda": (17.7828, 83.3677),
+    "seethammadhara": (17.7323, 83.3120), "waltair": (17.7251, 83.3296),
+    "steel plant": (17.6560, 83.1790), "pendurthi": (17.8453, 83.1819),
+    "kommadi": (17.7972, 83.3724), "bheemunipatnam": (17.8940, 83.4558),
+    "bhimili": (17.8940, 83.4558), "anakapalle": (17.6910, 82.9980),
+    "gopalapatnam": (17.7600, 83.2200), "kurmannapalem": (17.7100, 83.2700),
+    "akkayyapalem": (17.7415, 83.3198), "rk beach": (17.7139, 83.3412),
+    "jagadamba": (17.7200, 83.3050), "dabagardens": (17.7280, 83.3150),
+    "siripuram": (17.7350, 83.3220), "yendada": (17.7750, 83.3600),
+    "narava": (17.8100, 83.2100), "marripalem": (17.7540, 83.3215),
+    "isakathota": (17.7480, 83.2900), "tadichetlapalem": (17.7650, 83.3500),
+    "lawsons bay": (17.7550, 83.3750), "ram nagar": (17.7200, 83.3100),
+    "port area": (17.6868, 83.2774), "nakkavanipalem": (17.7050, 83.2950),
+    "chinawaltair": (17.7200, 83.3300), "old town vizag": (17.7050, 83.2980),
+    "muralinagar": (17.7480, 83.3310), "arilova": (17.7650, 83.2780),
+    "mvp": (17.7230, 83.3012),
+
+    # ── EAST GODAVARI DISTRICT ──
+    "kakinada": (16.9891, 82.2475), "rajahmundry": (17.0005, 81.8040),
+    "rajamahendravaram": (17.0005, 81.8040), "samarlakota": (17.0510, 82.1760),
+    "pithapuram": (17.1140, 82.2530), "tuni": (17.3580, 82.5450),
+    "mandapeta": (16.8670, 81.9280), "amalapuram": (16.5790, 82.0070),
+    "ramachandrapuram": (16.8370, 81.7720), "kovvur": (17.0150, 81.7290),
+    "nidadavolu": (17.0540, 81.6710), "tanuku": (16.7560, 81.6800),
+    "eluru": (16.7107, 81.0952), "bhimavaram": (16.5440, 81.5220),
+
+    # ── WEST GODAVARI DISTRICT ──
+    "west godavari": (16.9108, 81.3318), "tadepalligudem": (16.8140, 81.5240),
+    "palakol": (16.5150, 81.7290), "narasapuram": (16.4340, 81.6980),
+    "jangareddigudem": (17.1700, 81.3010), "denduluru": (16.8830, 81.4350),
+    "akividu": (16.5810, 81.3780),
+
+    # ── KRISHNA DISTRICT ──
+    "vijayawada": (16.5062, 80.6480), "machilipatnam": (16.1875, 81.1350),
+    "gudivada": (16.4350, 80.9950), "nandigama": (16.7720, 80.2830),
+    "jaggaiahpet": (17.0300, 80.0960), "nuzvid": (16.7880, 80.8450),
+    "kankipadu": (16.4370, 80.7660), "bandar": (16.1875, 81.1350),
+    "ibrahimpatnam": (16.5360, 80.5620), "tiruvuru": (16.9880, 80.6190),
+    "krishna": (16.5062, 80.6480),
+
+    # ── GUNTUR DISTRICT ──
+    "guntur": (16.3067, 80.4365), "tenali": (16.2430, 80.6430),
+    "narasaraopet": (16.2350, 80.0490), "bapatla": (15.9050, 80.4670),
+    "sattenapalle": (16.3970, 80.1520), "ponnur": (16.0690, 80.5510),
+    "mangalagiri": (16.4310, 80.5590), "tadikonda": (16.4760, 80.5250),
+    "chilakaluripet": (16.0900, 80.1660), "repalle": (16.0270, 80.8310),
+    "vinukonda": (15.8220, 79.7450), "macherla": (16.4760, 79.4340),
+
+    # ── PRAKASAM DISTRICT ──
+    "ongole": (15.5057, 80.0499), "markapur": (15.7380, 79.2680),
+    "giddalur": (15.3730, 79.0230), "kanigiri": (15.4050, 79.5040),
+    "chirala": (15.8270, 80.3530), "addanki": (15.8140, 79.9760),
+    "kandukur": (15.2160, 79.9010), "darsi": (15.7690, 79.6790),
+    "podili": (15.6320, 79.6940), "prakasam": (15.5057, 80.0499),
+
+    # ── NELLORE DISTRICT ──
+    "nellore": (14.4426, 79.9865), "kavali": (14.9160, 79.9940),
+    "gudur": (14.1500, 79.8560), "sullurpeta": (13.7600, 80.0060),
+    "atmakur": (14.6230, 79.6140), "alluru": (14.5800, 79.9300),
+    "venkatagiri": (13.9590, 79.5820), "naidupet": (13.9040, 79.8990),
+    "podalakur": (14.5350, 79.9600), "kovur": (14.4990, 79.9850),
+
+    # ── CHITTOOR DISTRICT ──
+    "tirupati": (13.6288, 79.4192), "chittoor": (13.2172, 79.1003),
+    "madanapalle": (13.5560, 78.5010), "punganur": (13.3680, 78.5730),
+    "palamaner": (13.2040, 78.7480), "kuppam": (12.7470, 78.3440),
+    "srikalahasti": (13.7498, 79.6985), "nagari": (13.3230, 79.5870),
+    "chandragiri": (13.5860, 79.3110), "vellore road": (13.2000, 79.1000),
+    "renigunta": (13.6510, 79.5120), "tiruchanur": (13.5620, 79.3820),
+
+    # ── KADAPA DISTRICT ──
+    "kadapa": (14.4673, 78.8242), "cuddapah": (14.4673, 78.8242),
+    "proddatur": (14.7500, 78.5480), "rajampet": (14.1930, 79.1620),
+    "jammalamadugu": (14.8480, 78.3820), "badvel": (14.4470, 79.0540),
+    "mydukur": (14.6870, 78.9910), "pulivendula": (14.4240, 78.2280),
+    "vempalli": (14.7670, 78.6270), "porumamilla": (14.8700, 79.1050),
+
+    # ── KURNOOL DISTRICT ──
+    "kurnool": (15.8281, 78.0373), "nandyal": (15.4779, 78.4836),
+    "adoni": (15.6280, 77.2730), "yemmiganur": (15.7640, 77.4870),
+    "dhone": (15.3940, 77.8740), "atmakur kurnool": (15.8810, 78.5900),
+    "pattikonda": (15.3940, 77.8190), "allagadda": (15.1390, 78.5200),
+    "srisailam": (16.0730, 78.8680), "mantralayam": (15.3760, 77.6270),
+    "guntakal": (15.1720, 77.3650),
+
+    # ── ANANTAPUR DISTRICT ──
+    "anantapur": (14.6819, 77.6006), "hindupur": (13.8290, 77.4910),
+    "guntakal": (15.1720, 77.3650), "dharmavaram": (14.4150, 77.7270),
+    "tadipatri": (14.9040, 77.9990), "rayadurg": (14.6980, 76.8530),
+    "pamidi": (14.9630, 77.5870), "kadiri": (14.1120, 78.1580),
+    "penukonda": (14.0810, 77.5960), "gooty": (15.1240, 77.6330),
+    "uravakonda": (14.9460, 77.2570), "lepakshi": (13.8050, 77.6080),
+
+    # ── SRIKAKULAM DISTRICT ──
+    "srikakulam": (18.2949, 83.8938), "narasannapeta": (18.4160, 84.0410),
+    "palasa": (18.7720, 84.4130), "rajam": (18.4700, 83.6380),
+    "etcherla": (18.4000, 83.9000), "amadalavalasa": (18.4110, 83.9050),
+    "ichapuram": (19.1150, 84.6930), "tekkali": (18.6040, 84.2320),
+    "santhabommali": (18.9300, 84.0820),
+
+    # ── VIZIANAGARAM DISTRICT ──
+    "vizianagaram": (18.1170, 83.3956), "bobbili": (18.5710, 83.3660),
+    "parvathipuram": (18.7820, 83.4270), "salur": (18.5260, 83.2140),
+    "gajapathinagaram": (18.3270, 83.5990), "srungavarapukota": (18.1130, 83.1010),
+    "cheepurupalle": (18.3100, 83.5600),
+
+    # ── ALLURI SITHARAMA RAJU DISTRICT (NEW) ──
+    "paderu": (18.0700, 82.6700), "araku": (18.3270, 82.8780),
+    "araku valley": (18.3270, 82.8780), "chintapalle": (17.8680, 82.4700),
+    "narsipatnam": (17.6700, 82.6110),
+
+    # ── PARVATHIPURAM MANYAM DISTRICT ──
+    "parvathipuram": (18.7820, 83.4270), "manyam": (18.5000, 83.3000),
+
+    # ── KONASEEMA DISTRICT ──
+    "amalapuram": (16.5790, 82.0070), "razole": (16.4750, 81.8390),
+
+    # ── ELURU DISTRICT ──
+    "eluru": (16.7107, 81.0952), "tadepalligudem": (16.8140, 81.5240),
+
+    # ── NTR DISTRICT (KRISHNA) ──
+    "vijayawada": (16.5062, 80.6480), "nunna": (16.5000, 80.7500),
+    "ibrahimpatnam": (16.5360, 80.5620),
+
+    # ── BAPATLA DISTRICT ──
+    "bapatla": (15.9050, 80.4670), "chirala": (15.8270, 80.3530),
+    "narasaraopet": (16.2350, 80.0490),
+
+    # ── PALNADU DISTRICT ──
+    "narasaraopet": (16.2350, 80.0490), "macherla": (16.4760, 79.4340),
+    "vinukonda": (15.8220, 79.7450), "gurazala": (16.5630, 79.6010),
+
+    # ── NANDYAL DISTRICT ──
+    "nandyal": (15.4779, 78.4836), "allagadda": (15.1390, 78.5200),
+    "srisailam": (16.0730, 78.8680),
+
+    # ── SRI SATHYA SAI DISTRICT ──
+    "puttaparthi": (14.1650, 77.8280), "hindupur": (13.8290, 77.4910),
+    "dharmavaram": (14.4150, 77.7270),
+
+    # ── TIRUPATI DISTRICT ──
+    "tirupati": (13.6288, 79.4192), "tirumala": (13.6833, 79.3474),
+    "srikalahasti": (13.7498, 79.6985), "renigunta": (13.6510, 79.5120),
+
+    # ── ANNAMAYYA DISTRICT ──
+    "rajampet": (14.1930, 79.1620), "madanapalle": (13.5560, 78.5010),
+    "rayachoti": (14.0500, 78.7500),
+
+    # ── YSR KADAPA DISTRICT ──
+    "kadapa": (14.4673, 78.8242), "proddatur": (14.7500, 78.5480),
+    "pulivendula": (14.4240, 78.2280),
+
+    # ── STATE CAPITAL ──
+    "amaravati": (16.5725, 80.3564), "andhra pradesh": (15.9129, 79.7400),
+    "ap": (15.9129, 79.7400),
 }
 
 def geocode_location(location_text):
-    """Convert location text to lat/lon using known areas or Nominatim API."""
-    # First try known areas (fast, no API needed)
-    loc_lower = location_text.lower()
-    for area, coords in VIZAG_LOCATIONS.items():
+    """Convert location text to lat/lon — covers all of Andhra Pradesh."""
+    loc_lower = location_text.lower().strip()
+
+    # 1. Try known AP locations first (instant, no API)
+    for area, coords in AP_LOCATIONS.items():
         if area in loc_lower:
             return coords
 
-    # Try Nominatim free geocoding API (no key needed)
+    # 2. Try Nominatim free geocoding API with AP context
     try:
         query = location_text
-        if "visakhapatnam" not in loc_lower and "vizag" not in loc_lower:
-            query += ", Visakhapatnam, Andhra Pradesh, India"
-        url = f"https://nominatim.openstreetmap.org/search?q={query}&format=json&limit=1"
+        # Add AP context if not already present
+        if "andhra" not in loc_lower and "pradesh" not in loc_lower:
+            query += ", Andhra Pradesh, India"
+        url = f"https://nominatim.openstreetmap.org/search?q={query}&format=json&limit=1&countrycodes=in"
         resp = requests.get(url, headers={"User-Agent": "PublicPulse/1.0"}, timeout=5)
         data = resp.json()
         if data:
@@ -490,8 +621,8 @@ def geocode_location(location_text):
     except:
         pass
 
-    # Fallback: Visakhapatnam city center
-    return (17.7231, 83.3012)
+    # 3. Fallback: Andhra Pradesh geographic center
+    return (15.9129, 79.7400)
 
 def call_ai(prompt):
     try:
@@ -874,14 +1005,14 @@ elif is_page(page, "nav_track"):
 # PAGE 3 - SATELLITE MAP
 # ============================================
 elif is_page(page, "nav_satellite"):
-    st.markdown('<p class="section-header">🛰️ Live Satellite Map — Visakhapatnam</p>', unsafe_allow_html=True)
-    m = folium.Map(location=[17.7231, 83.3012], zoom_start=13,
+    st.markdown('<p class="section-header">🛰️ Live Satellite Map — Andhra Pradesh</p>', unsafe_allow_html=True)
+    m = folium.Map(location=[15.9129, 79.7400], zoom_start=7,
         tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attr="Esri Satellite")
     folium.TileLayer(tiles="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
         attr="Esri Labels", name="Labels", overlay=True).add_to(m)
     for c in st.session_state.complaints:
         if c.get('is_fake', False): continue
-        lat, lon = c.get('lat', 17.7231), c.get('lon', 83.3012)
+        lat, lon = c.get('lat', 15.9129), c.get('lon', 79.7400)
         color = get_marker_color(c['priority'])
         p_color = "#dc2626" if c['priority']=="High" else "#d97706" if c['priority']=="Medium" else "#16a34a"
 
@@ -946,13 +1077,13 @@ elif is_page(page, "nav_satellite"):
 # PAGE 4 - HEATMAP
 # ============================================
 elif is_page(page, "nav_heatmap"):
-    st.markdown('<p class="section-header">🌡️ Complaint Intensity Heatmap</p>', unsafe_allow_html=True)
-    hm = folium.Map(location=[17.7231, 83.3012], zoom_start=12, tiles="OpenStreetMap")
+    st.markdown('<p class="section-header">🌡️ Complaint Intensity Heatmap — Andhra Pradesh</p>', unsafe_allow_html=True)
+    hm = folium.Map(location=[15.9129, 79.7400], zoom_start=7, tiles="OpenStreetMap")
     heat_data = []
     for c in st.session_state.complaints:
         if not c.get('is_fake', False):
             weight = 3 if c['priority']=="High" else 2 if c['priority']=="Medium" else 1
-            heat_data.append([c.get('lat',17.7231), c.get('lon',83.3012), weight])
+            heat_data.append([c.get('lat',15.9129), c.get('lon',79.7400), weight])
     if heat_data:
         HeatMap(heat_data, min_opacity=0.4, max_zoom=18, radius=40, blur=25,
             gradient={0.2:'blue',0.4:'lime',0.6:'yellow',0.8:'orange',1.0:'red'}).add_to(hm)
